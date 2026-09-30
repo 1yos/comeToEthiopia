@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Lalibela cross favicon — minimal version -->
+  <rect width="32" height="32" fill="#1F2A44"/>
+  <path d="M16 4 L18 10 L22 8 L20 12 L26 12 L22 15 L26 18 L20 17 L20 20 L26 20 L22 23 L26 26 L20 24 L22 28 L18 26 L16 30 L14 26 L10 28 L12 24 L6 26 L10 23 L6 20 L12 20 L12 17 L6 18 L10 15 L6 12 L12 12 L10 8 L14 10 Z" fill="none" stroke="#B8742A" stroke-width="0.8"/>
+  <circle cx="16" cy="17" r="2" fill="#B8742A"/>
+</svg>

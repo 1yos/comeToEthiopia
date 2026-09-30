@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Environment — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Vite cache
+.vite/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+*.swp
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+
+# Large GeoJSON source files (too big for GitHub)
+scripts/data/world_adm0.geojson
+scripts/data/ethiopia_adm0.geojson
+scripts/data/ethiopia_adm1.geojson
+
+# Generated map data (regenerate with: npx tsx scripts/build-map.ts)
+# src/data/ethiopiaMap.ts
+
+# Sharp processed image variants (regenerate with: npx tsx scripts/process-images.ts)
+# src/assets/images/

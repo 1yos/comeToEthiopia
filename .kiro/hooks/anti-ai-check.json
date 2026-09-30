@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Anti-AI copy and style check",
+      "trigger": "PostFileSave",
+      "description": "Scans saved TypeScript/TSX files for banned phrases, hard-coded colors, generic UI patterns, and cultural text missing review flags",
+      "matcher": "\\.(tsx|ts)$",
+      "action": {
+        "type": "agent",
+        "prompt": "You are a quality guard for the \"Come to Ethiopia\" site. A file in /src was just saved.\n\nScan it for ALL of the following violations and report each one with the exact line:\n\nBANNED PHRASES (flag any occurrence):\nunlock, discover the magic, hidden gem, tapestry, journey of a lifetime, immerse yourself, embark on, vibrant culture, rich culture, nestled, breathtaking, curated, seamless, elevate, \"Welcome to\", get started, transform your, unforgettable, lorem ipsum\n\nBANNED VISUAL PATTERNS (flag if present in JSX/CSS):\n- Hard-coded hex colors instead of CSS variables (e.g. #B8742A directly in style={})\n- borderRadius with values like \"rounded-2xl\", \"1rem\", \"16px\" on every component\n- Three equal-width cards/columns in a grid\n- Generic gradient buttons (background with two color gradient on primary CTA)\n- Glassmorphism: backdrop-filter, background rgba on cards\n- Emoji in JSX content\n\nBANNED COPY PATTERNS:\n- Empty alt text: alt=\"\"\n- Placeholder text that is lorem ipsum or generic (e.g. \"Image of Ethiopia\")\n\nCULTURAL REVIEW FLAGS:\n- Any Amharic or Ge'ez text NOT marked with a TODO-REVIEW comment nearby\n\nIf you find violations, list them clearly with line numbers and suggest the fix. If no violations found, respond: \"✓ No violations in this file.\""
+      }
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+/* ─── CSS Custom Properties ─────────────────────────────────────────────── */
+:root {
+  --ochre:    #B8742A;
+  --indigo:   #1F2A44;
+  --sulphur:  #E3B505;
+  --highland: #3F5B3A;
+  --paper:    #F1EAD9;
+  --ink:      #121110;
+
+  /* Derived */
+  --ochre-10:   color-mix(in srgb, var(--ochre) 10%, transparent);
+  --ochre-20:   color-mix(in srgb, var(--ochre) 20%, transparent);
+  --paper-90:   color-mix(in srgb, var(--paper) 90%, transparent);
+  --ink-60:     color-mix(in srgb, var(--ink)   60%, transparent);
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body:    'Bricolage Grotesque', sans-serif;
+  --font-geez:    'Noto Serif Ethiopic', serif;
+
+  --lenis-duration: 1.2s;
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Lenis sets scroll-behavior: auto — don't fight it */
+  overflow-x: hidden;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Hide default cursor — custom cursor replaces it */
+  cursor: none;
+}
+
+/* Show default cursor for touch devices */
+@media (hover: none) and (pointer: coarse) {
+  body { cursor: auto; }
+}
+
+/* ─── Grain overlay (SVG noise, felt not seen) ───────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+}
+
+/* ─── Typography base ────────────────────────────────────────────────────── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 144;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+p {
+  font-family: var(--font-body);
+  line-height: 1.7;
+}
+
+.geez {
+  font-family: var(--font-geez);
+  line-height: 1;
+}
+
+/* ─── Focus styles (AA compliant, ochre outline) ───────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--ochre);
+  outline-offset: 3px;
+}
+
+/* ─── Scrollbar (minimal) ────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--ink); }
+::-webkit-scrollbar-thumb { background: var(--ochre); }
+
+/* ─── Selection ──────────────────────────────────────────────────────────── */
+::selection {
+  background-color: var(--ochre);
+  color: var(--paper);
+}
+
+/* ─── Reduced motion — collapse all durations ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Utility classes ────────────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Photo placeholder slots — removed in production when real images are supplied */
+.photo-slot {
+  background-color: var(--indigo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  position: relative;
+}
+
+.photo-slot::after {
+  content: attr(data-photo);
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  font-size: 10px;
+  opacity: 0.8;
+  text-align: left;
+}
