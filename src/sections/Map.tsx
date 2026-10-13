@@ -1,67 +1,367 @@
-import { useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { regions, type Region } from "@/data/regions";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
-  countryPath,
-  adm1Paths,
-  places,
-  MAP_VIEWBOX_W,
-  MAP_VIEWBOX_H,
-} from "@/data/ethiopiaMap";
+  destinations as defaultDestinations,
+  CATEGORY_LABELS,
+  DESTINATION_CATEGORIES,
+  ETHIOPIA_BOUNDS,
+  type Destination,
+  type DestinationCategory,
+} from "@/data/destinations";
 import { siteContent } from "@/data/content";
+import { tours } from "@/data/tours";
+import { ResponsiveImage, buildSrcSet } from "@/components/ResponsiveImage";
 import { DURATION, EASE_FM } from "@/lib/motion";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 /**
- * Interactive map of Ethiopia — built from real geoBoundaries ETH ADM0/ADM1 data.
- * Projection: geoMercator fitted to MAP_VIEWBOX×MAP_VIEWBOX (1000×1000).
- * All marker positions derived from real lon/lat via the pre-projected `places` array.
- * No hand-drawn outlines. No hard-coded x/y pixels in this file.
+ * Interactive map of Ethiopia.
  *
- * Visual treatment:
- * - SVG roughen filter (feTurbulence + feDisplacementMap) gives the border
- *   a slightly organic, hand-made feel on top of the accurate geography.
- * - Faint Ge'ez place-name labels over major cities.
- * - Small hand-drawn compass rose in the lower-right corner.
- * - Hover/tap a region marker → detail card with photo, story, season, route info.
+ * Real terrain tiles (OpenTopoMap over OpenStreetMap/SRTM data), colour-tuned
+ * to the site's paper palette, with one custom pin per destination.
+ *
+ * ── CMS READY ──────────────────────────────────────────────────────────────
+ * The component takes `destinations` as a prop, defaulting to the static file
+ * in /src/data/destinations.ts. To go live with a CMS, fetch the array and
+ * pass it in — nothing else changes:
+ *
+ *   <Map destinations={await getDestinations()} />
+ *
+ * Pins are rebuilt whenever the array changes, so a CMS can add, edit and
+ * remove destinations at runtime without a page reload.
  */
 
-// Map each region id to the corresponding projected place
-const REGION_TO_PLACE: Record<string, string> = {
-  simien: "simien",
-  lalibela: "lalibela",
-  addis: "addis",
-  omo: "omo",
-  danakil: "danakil",
+/** Category → CSS variable. Keeps colour decisions in one place. */
+const CATEGORY_COLOR: Record<DestinationCategory, string> = {
+  nature: "var(--highland)",
+  history: "var(--indigo)",
+  culture: "var(--ochre)",
+  expedition: "var(--sulphur)",
 };
 
-// Additional notable places shown as faint labels (not region markers)
-const LABEL_PLACES = ["gondar", "axum", "harar", "bale", "bahirdar"] as const;
+/**
+ * The base map. Terrain (OpenTopoMap) is the only source — there is no API
+ * key behind it, so it is the one layer we can rely on. Leaflet renders the
+ * attribution control for us.
+ */
+const TILE_SOURCES = {
+  terrain: {
+    url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+    attribution:
+      'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM &middot; style &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
+    maxZoom: 16,
+    subdomains: "abc",
+  },
+} as const;
 
-export function Map() {
-  const [active, setActive] = useState<Region | null>(null);
-  const [cardSide, setCardSide] = useState<"left" | "right">("right");
-  const svgRef = useRef<SVGSVGElement>(null);
+/** Pin hit area. Larger than the 30px dot so touch targets meet 44px. */
+const PIN_HIT = 44;
+
+export interface MapProps {
+  /** CMS hook: replace with fetched data. Defaults to the static file. */
+  destinations?: Destination[];
+  /** Which pin is selected, controllable from outside. */
+  activeId?: string | null;
+  /** Fired when a pin or list row is chosen. */
+  onSelect?: (destination: Destination | null) => void;
+}
+
+
+export function Map({
+  destinations = defaultDestinations,
+  activeId: controlledActiveId,
+  onSelect,
+}: MapProps) {
+  const mapHostRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const isMobile = useIsMobile();
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const markersRef = useRef<Record<string, L.Marker>>({});
+  const sizeObserverRef = useRef<ResizeObserver | null>(null);
+
+  const [internalActiveId, setInternalActiveId] = useState<string | null>(null);
+  const activeId = controlledActiveId ?? internalActiveId;
+  const [activeCategory, setActiveCategory] = useState<
+    DestinationCategory | "all"
+  >("all");
+  const [tilesLoading, setTilesLoading] = useState(true);
+  const [tilesFailed, setTilesFailed] = useState(false);
+
   const { map: mapContent } = siteContent;
 
-  const handleMarkerActivate = (
-    region: Region,
-    e: React.MouseEvent | React.KeyboardEvent,
-  ) => {
-    e.preventDefault();
-    if (active?.id === region.id) {
-      setActive(null);
-      return;
+  const visible = useMemo(
+    () =>
+      activeCategory === "all"
+        ? destinations
+        : destinations.filter((d) => d.category === activeCategory),
+    [destinations, activeCategory],
+  );
+
+  const activeDestination =
+    destinations.find((d) => d.id === activeId) ?? null;
+
+  /**
+   * Bounding box of whatever the sidebar is currently listing. Recomputed on
+   * every filter change and read once for the opening animation.
+   */
+  const fitBounds = useMemo<L.LatLngBoundsExpression>(() => {
+    if (visible.length === 0) {
+      return [
+        [ETHIOPIA_BOUNDS.south, ETHIOPIA_BOUNDS.west],
+        [ETHIOPIA_BOUNDS.north, ETHIOPIA_BOUNDS.east],
+      ];
     }
-    // Decide which side the card appears on based on marker x position
-    const place = places.find((p) => p.id === REGION_TO_PLACE[region.id]);
-    if (place) setCardSide(place.x > MAP_VIEWBOX_W * 0.55 ? "left" : "right");
-    setActive(region);
+
+    const lats = visible.map((d) => d.lat);
+    const lngs = visible.map((d) => d.lng);
+    const pad = 0.18; // breathing room so pins clear the map's inner edge
+    const south = Math.min(...lats);
+    const north = Math.max(...lats);
+    const west = Math.min(...lngs);
+    const east = Math.max(...lngs);
+    const latPad = Math.max((north - south) * pad, 0.6);
+    const lngPad = Math.max((east - west) * pad, 0.6);
+
+    return [
+      [south - latPad, west - lngPad],
+      [north + latPad, east + lngPad],
+    ];
+  }, [visible]);
+
+  // Read inside the one-shot opening animation without dep churn.
+  const fitBoundsRef = useRef(fitBounds);
+  fitBoundsRef.current = fitBounds;
+
+  const select = (destination: Destination | null) => {
+    setInternalActiveId(destination?.id ?? null);
+    onSelect?.(destination);
+  };
+
+  // Markers and key handlers are created once, so they read the latest
+  // callback through a ref instead of capturing a stale `onSelect`.
+  const selectRef = useRef(select);
+  selectRef.current = select;
+
+  // ── Map instance: created once, survives re-renders ──────────────────────
+  useEffect(() => {
+    const host = mapHostRef.current;
+    if (!host || mapRef.current) return;
+
+    const map = L.map(host, {
+      center: [9.145, 40.4897],
+      zoom: 6,
+      minZoom: 5,
+      maxZoom: 12,
+      zoomControl: false, // added explicitly below, positioned top-right
+      attributionControl: true, // OSM/OpenTopoMap licences require it
+      // Page scroll stays page scroll until the visitor opts in by clicking.
+      scrollWheelZoom: false,
+      boxZoom: false,
+      keyboard: true,
+    });
+
+    L.control.zoom({ position: "topright" }).addTo(map);
+    // Keep Leaflet's own credit, drop the default "Leaflet | " duplication
+    map.attributionControl.setPrefix(
+      '<a href="https://leafletjs.com" title="Leaflet">Leaflet</a>',
+    );
+
+    // Scroll-wheel zoom is an opt-in: the page must keep scrolling while the
+    // visitor is just reading past the map. On click (or keyboard focus) the
+    // map takes the wheel, which also means Lenis has to stop handling it —
+    // Lenis calls preventDefault on wheel events unless the path contains
+    // `data-lenis-prevent` (see src/hooks/useLenis.ts). Leaving the map
+    // hands page scroll back to Lenis.
+    const enableWheel = () => {
+      map.scrollWheelZoom.enable();
+      host.setAttribute("data-lenis-prevent", "");
+    };
+
+    const disableWheel = () => {
+      map.scrollWheelZoom.disable();
+      host.removeAttribute("data-lenis-prevent");
+    };
+
+    map.on("click", enableWheel);
+    // focusin fires when the container or a marker takes keyboard focus
+    host.addEventListener("focusin", enableWheel);
+    host.addEventListener("mouseleave", disableWheel);
+
+    // Leaflet measures its container once on mount. The page fades in, the
+    // preloader unmounts and webfonts land afterwards, so measure again on any
+    // container resize, on window load, and once after the first paint.
+    const invalidate = () => map.invalidateSize({ animate: false });
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(invalidate);
+      observer.observe(host);
+      sizeObserverRef.current = observer;
+    }
+
+    window.addEventListener("load", invalidate);
+    const settleTimer = window.setTimeout(invalidate, 400);
+    void document.fonts?.ready.then(() => invalidate());
+
+    mapRef.current = map;
+
+    return () => {
+      window.removeEventListener("load", invalidate);
+      window.clearTimeout(settleTimer);
+      host.removeEventListener("focusin", enableWheel);
+      host.removeEventListener("mouseleave", disableWheel);
+      disableWheel(); // the host survives StrictMode's simulated unmount
+      sizeObserverRef.current?.disconnect();
+      sizeObserverRef.current = null;
+      map.remove();
+      mapRef.current = null;
+      tileLayerRef.current = null;
+      markersRef.current = {};
+    };
+  }, []);
+
+  // ── Tile layer: terrain is the only base map, added once on mount ────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const source = TILE_SOURCES.terrain;
+
+    if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
+
+    const layer = L.tileLayer(source.url, {
+      attribution: source.attribution,
+      maxZoom: source.maxZoom,
+      subdomains: source.subdomains,
+      detectRetina: true,
+    });
+
+    // The first tile response settles the loading veil either way — a slow or
+    // blocked CDN must never leave the placeholder shimmering forever.
+    // Note: no `tileloadstart` listener. It fires again on every pan, and the
+    // veil must only ever appear during the first load.
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      setTilesLoading(false);
+    };
+
+    layer.on("load", settle);
+    layer.on("tileload", settle);
+    layer.on("tileerror", () => {
+      setTilesFailed(true);
+      settle();
+    });
+
+    setTilesFailed(false);
+    setTilesLoading(true);
+    layer.addTo(map);
+    tileLayerRef.current = layer;
+
+    // Keep the frame inside the Ethiopian neighbourhood when panning out.
+    map.setMaxBounds([
+      [ETHIOPIA_BOUNDS.south - 3, ETHIOPIA_BOUNDS.west - 3],
+      [ETHIOPIA_BOUNDS.north + 3, ETHIOPIA_BOUNDS.east + 3],
+    ]);
+  }, []);
+
+  // ── Pins: rebuilt whenever the destination list changes (CMS-friendly) ───
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    Object.values(markersRef.current).forEach((marker) => marker.remove());
+    markersRef.current = {};
+
+    visible.forEach((destination, index) => {
+      const color = CATEGORY_COLOR[destination.category];
+      const label = destination.numeral ?? String(index + 1);
+
+      const icon = L.divIcon({
+        className: `cte-marker${destination.featured ? " cte-marker--featured" : ""}`,
+        html:
+          `<span class="cte-marker__inner" style="--dot-color: ${color}">` +
+          (destination.featured
+            ? '<span class="cte-marker__pulse"></span>'
+            : "") +
+          `<span class="cte-marker__dot">${label}</span></span>`,
+        iconSize: [PIN_HIT, PIN_HIT],
+        iconAnchor: [PIN_HIT / 2, PIN_HIT / 2],
+      });
+
+      const marker = L.marker([destination.lat, destination.lng], {
+        icon,
+        title: destination.name,
+        alt: `${destination.name}, Ethiopia`,
+        keyboard: true,
+        riseOnHover: true,
+      }).addTo(map);
+
+      marker.on("click", () => selectRef.current(destination));
+
+      markersRef.current[destination.id] = marker;
+    });
+  }, [visible]);
+
+
+  // ── Selected pin styling, driven by `activeId` ───────────────────────────
+  useEffect(() => {
+    Object.entries(markersRef.current).forEach(([id, marker]) => {
+      const element = marker.getElement();
+      if (element) {
+        element.classList.toggle("cte-marker--active", id === activeId);
+      }
+    });
+
+    const target = activeId ? markersRef.current[activeId] : null;
+    if (target && mapRef.current) {
+      mapRef.current.panTo(target.getLatLng(), { animate: true, duration: 0.6 });
+    }
+  }, [activeId, visible]);
+
+  // ── Escape closes the detail card ────────────────────────────────────────
+  useEffect(() => {
+    if (!activeDestination) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") selectRef.current(null);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeDestination]);
+
+  /**
+   * Opening move: ease from the country view into the destination bounds.
+   * Runs once — later filtering uses the explicit "Fit" button instead, so the
+   * map never jumps while the visitor is reading.
+   */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const timer = window.setTimeout(() => {
+      map.flyToBounds(fitBoundsRef.current, {
+        padding: [48, 48],
+        duration: 1.2,
+      });
+    }, 600);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  /** Frame every visible destination using the current filter. */
+  const fitVisible = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.flyToBounds(fitBounds, { padding: [48, 48], duration: 0.8 });
   };
 
   return (
     <section
       id="map"
-      role="region"
       aria-label="Interactive map of Ethiopia"
       style={{
         backgroundColor: "var(--paper)",
@@ -70,576 +370,813 @@ export function Map() {
         overflow: "hidden",
       }}
     >
-      {/* Section header */}
+      {/* Background Ge'ez — same treatment as every other paper section */}
       <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          bottom: "-5%",
+          right: "-3%",
+          fontFamily: "var(--font-geez)",
+          fontSize: "clamp(180px, 28vw, 400px)",
+          color: "var(--ink)",
+          opacity: 0.03,
+          lineHeight: 1,
+          userSelect: "none",
+          pointerEvents: "none",
+        }}
+      >
+        {mapContent.geezDecorator} {/* TODO-REVIEW */}
+      </div>
+
+      <SectionHeader
+        label={mapContent.sectionLabel}
+        headline={mapContent.headline}
+        subline={mapContent.subline}
+      />
+
+      <div
+        className="map-layout"
         style={{
           display: "grid",
-          gridTemplateColumns: "clamp(24px, 6vw, 80px) 1fr",
-          padding: "0 clamp(24px, 6vw, 80px)",
-          marginBottom: "clamp(48px, 6vh, 80px)",
-        }}
-      >
-        <div
-          style={{
-            writingMode: "vertical-rl",
-            fontFamily: "var(--font-body)",
-            fontSize: 10,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            color: "var(--ochre)",
-            alignSelf: "start",
-            paddingTop: 4,
-          }}
-        >
-          {mapContent.sectionLabel}
-        </div>
-        <div>
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontVariationSettings: '"opsz" 72, "wght" 600',
-              fontSize: "clamp(2.5rem, 6vw, 7rem)",
-              color: "var(--ink)",
-              lineHeight: 1.0,
-              letterSpacing: "-0.025em",
-              marginBottom: 20,
-            }}
-          >
-            {mapContent.headline}
-          </h2>
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "clamp(13px, 1.2vw, 16px)",
-              color: "var(--ink)",
-              opacity: 0.65,
-              maxWidth: 480,
-              lineHeight: 1.7,
-            }}
-          >
-            {mapContent.subline}
-          </p>
-        </div>
-      </div>
-
-      {/* Map wrapper */}
-      <div
-        style={{
-          position: "relative",
-          maxWidth: 1100,
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(260px, 340px) 1fr",
+          gap: "clamp(20px, 2.5vw, 40px)",
+          maxWidth: 1440,
           margin: "0 auto",
-          padding: "0 clamp(24px, 5vw, 64px)",
+          padding: "0 clamp(16px, 4vw, 80px)",
+          alignItems: "start",
+          position: "relative",
+          zIndex: 1,
         }}
       >
-        {/* Ge'ez background decorator */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            top: "-6%",
-            right: "4%",
-            fontFamily: "var(--font-geez)",
-            fontSize: "clamp(120px, 20vw, 260px)",
-            color: "var(--ink)",
-            opacity: 0.03,
-            lineHeight: 1,
-            userSelect: "none",
-            pointerEvents: "none",
-          }}
-        >
-          {mapContent.geezDecorator} {/* TODO-REVIEW */}
-        </div>
+        <DestinationPanel
+          destinations={visible}
+          total={destinations.length}
+          activeId={activeId}
+          activeCategory={activeCategory}
+          hint={mapContent.defaultPrompt}
+          onCategoryChange={setActiveCategory}
+          onSelect={select}
+          onFit={fitVisible}
+        />
 
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${MAP_VIEWBOX_W} ${MAP_VIEWBOX_H}`}
-          role="img"
-          aria-label="Map of Ethiopia showing five key regions with interactive markers"
-          style={{
-            width: "100%",
-            height: "auto",
-            maxHeight: "80vh",
-            display: "block",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <defs>
-            {/* Roughen filter — gives accurate border an organic, hand-drawn quality */}
-            <filter id="roughen" x="-2%" y="-2%" width="104%" height="104%">
-              <feTurbulence
-                type="turbulence"
-                baseFrequency="0.5"
-                numOctaves="3"
-                seed="4"
-                result="noise"
-              />
-              <feDisplacementMap
-                in="SourceGraphic"
-                in2="noise"
-                scale="0.08"
-                xChannelSelector="R"
-                yChannelSelector="G"
-              />
-            </filter>
-
-            {/* Subtle texture filter for ADM1 fills */}
-            <filter id="texture" x="0%" y="0%" width="100%" height="100%">
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="0.65"
-                numOctaves="2"
-                result="noise"
-              />
-              <feColorMatrix
-                type="saturate"
-                values="0"
-                in="noise"
-                result="grey"
-              />
-              <feBlend in="SourceGraphic" in2="grey" mode="multiply" />
-            </filter>
-          </defs>
-
-          {/* ── ADM1 region fills (faint, textured) ── */}
-          <g opacity={0.18} filter="url(#texture)">
-            {adm1Paths.map((region) => (
-              <path
-                key={region.name}
-                d={region.path}
-                fill="var(--indigo)"
-                stroke="var(--paper)"
-                strokeWidth={0.01}
-              />
-            ))}
-          </g>
-
-          {/* ── Country outline (accurate geography + roughen filter) ── */}
-          <path
-            d={countryPath}
-            fill="var(--paper)"
-            fillOpacity={0.6}
-            stroke="var(--ink)"
-            strokeWidth={0.04}
-            strokeLinejoin="round"
-            filter="url(#roughen)"
+        <div style={{ position: "relative" }}>
+          <div
+            ref={mapHostRef}
+            role="application"
+            className="cte-map"
+            aria-label="Interactive map of Ethiopia. Each pin is a destination you can visit. Press Escape to close the detail card."
+            data-cursor="map"
+            data-cursor-label="Drag"
             style={{
-              filter: "drop-shadow(0 0.05px 0.15px rgba(18,17,16,0.07))",
+              width: "100%",
+              height: "clamp(420px, 66vh, 680px)",
+              borderRadius: 12,
+              overflow: "hidden",
+              boxShadow: "0 6px 32px rgba(18,17,16,0.14)",
+              border: "1px solid rgba(18,17,16,0.08)",
+              backgroundColor: "var(--paper)",
             }}
           />
 
-          {/* ── Clean country outline on top (sharp, no filter) ── */}
-          <path
-            d={countryPath}
-            fill="none"
-            stroke="var(--ink)"
-            strokeWidth={0.015}
-            strokeLinejoin="round"
-            opacity={0.3}
-          />
-
-          {/* ── Faint Ge'ez / latin place labels for non-region cities ── */}
-          {LABEL_PLACES.map((pid) => {
-            const p = places.find((pl) => pl.id === pid);
-            if (!p) return null;
-            return (
-              <g key={pid} aria-hidden="true" opacity={0.35}>
-                <circle cx={p.x} cy={p.y} r={0.05} fill="var(--ink)" />
-                <text
-                  x={p.x + 0.15}
-                  y={p.y + 0.05}
-                  fontFamily="var(--font-body)"
-                  fontSize={0.2}
-                  fill="var(--ink)"
-                  letterSpacing="0.03em"
-                  style={{ userSelect: "none" }}
-                >
-                  {p.name}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* ── Region markers (interactive) ── */}
-          {regions.map((region) => {
-            const placeId = REGION_TO_PLACE[region.id];
-            const place = places.find((p) => p.id === placeId);
-            if (!place) return null;
-            const isActive = active?.id === region.id;
-
-            return (
-              <g
-                key={region.id}
-                role="button"
-                tabIndex={0}
-                aria-label={`${region.name}: ${region.tagline}. Press Enter for details.`}
-                aria-pressed={isActive}
-                onClick={(e) => handleMarkerActivate(region, e)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ")
-                    handleMarkerActivate(region, e);
-                }}
-                style={{ cursor: "none" }}
-              >
-                {/* Pulse ring when active */}
-                {isActive && (
-                  <circle
-                    cx={place.x}
-                    cy={place.y}
-                    r={0.28}
-                    fill="none"
-                    stroke="var(--ochre)"
-                    strokeWidth={0.02}
-                    opacity={0.5}
-                  >
-                    <animate
-                      attributeName="r"
-                      values="0.18;0.42;0.18"
-                      dur="2s"
-                      repeatCount="indefinite"
-                    />
-                    <animate
-                      attributeName="opacity"
-                      values="0.5;0;0.5"
-                      dur="2s"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
-                )}
-                {/* Outer ring */}
-                <circle
-                  cx={place.x}
-                  cy={place.y}
-                  r={isActive ? 0.16 : 0.13}
-                  fill="none"
-                  stroke={isActive ? "var(--ochre)" : "var(--ink)"}
-                  strokeWidth={isActive ? 0.04 : 0.025}
-                />
-                {/* Dot */}
-                <circle
-                  cx={place.x}
-                  cy={place.y}
-                  r={isActive ? 0.08 : 0.06}
-                  fill={isActive ? "var(--ochre)" : "var(--ink)"}
-                />
-                {/* Ge'ez numeral label */}
-                <text
-                  x={place.x + 0.22}
-                  y={place.y - 0.1}
-                  fontFamily="var(--font-geez)"
-                  fontSize={0.25}
-                  fill={isActive ? "var(--ochre)" : "var(--ink)"}
-                  opacity={isActive ? 1 : 0.6}
-                  style={{ userSelect: "none" }}
-                  aria-hidden="true"
-                >
-                  {region.geezNumeral}
-                </text>
-                <text
-                  x={place.x + 0.22}
-                  y={place.y + 0.15}
-                  fontFamily="var(--font-body)"
-                  fontSize={0.15}
-                  fill="var(--ink)"
-                  opacity={isActive ? 0.9 : 0.55}
-                  letterSpacing="0.04em"
-                  style={{ userSelect: "none" }}
-                  aria-hidden="true"
-                >
-                  {region.name}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* ── Hand-drawn compass rose (bottom-right corner) ── */}
-          <CompassRose cx={311} cy={344} size={0.8} />
-        </svg>
-
-        {/* Detail card — absolutely positioned, side determined by marker position */}
-        <AnimatePresence>
-          {active && (
-            <MapDetailCard
-              region={active}
-              side={cardSide}
-              onClose={() => setActive(null)}
+          {tilesLoading && !tilesFailed && (
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: 12,
+                pointerEvents: "none",
+                background:
+                  "linear-gradient(115deg, var(--paper) 30%, rgba(241,234,217,0.6) 50%, var(--paper) 70%)",
+                backgroundSize: "220% 100%",
+                animation: "cteMapSheen 1.9s ease-in-out infinite",
+              }}
             />
           )}
-        </AnimatePresence>
-      </div>
 
-      {/* Tap prompt */}
-      <p
-        style={{
-          textAlign: "center",
-          fontFamily: "var(--font-body)",
-          fontSize: 11,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: "var(--ink)",
-          opacity: 0.35,
-          marginTop: 32,
-        }}
-        aria-hidden="true"
-      >
-        {mapContent.defaultPrompt}
-      </p>
+          <MapControls onFit={fitVisible} />
+
+          {tilesFailed && <TileErrorNotice message={mapContent.tilesError} />}
+
+          <AnimatePresence>
+            {activeDestination && (
+              <DestinationCard
+                key={activeDestination.id}
+                destination={activeDestination}
+                onClose={() => select(null)}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </section>
   );
 }
 
-// ── Detail card ──────────────────────────────────────────────────────────────
 
-function MapDetailCard({
-  region,
-  side,
-  onClose,
+/* ══════════════════════════════════════════════════════════════════════════
+   Sub-components
+   Kept in this file on purpose: they exist only for the map and share its
+   palette, tokens and localStorage-free state.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function SectionHeader({
+  label,
+  headline,
+  subline,
 }: {
-  region: Region;
-  side: "left" | "right";
-  onClose: () => void;
+  label: string;
+  headline: string;
+  subline: string;
 }) {
   return (
-    <motion.div
-      key={region.id}
-      initial={{ opacity: 0, x: side === "right" ? 20 : -20, scale: 0.96 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      transition={{ duration: DURATION.micro, ease: [...EASE_FM.outExpo] }}
-      role="dialog"
-      aria-label={`Details for ${region.name}`}
+    <div
       style={{
-        position: "absolute",
-        top: "10%",
-        ...(side === "right" ? { right: 0 } : { left: 0 }),
-        zIndex: 20,
-        width: "clamp(240px, 28vw, 290px)",
-        backgroundColor: "var(--indigo)",
-        color: "var(--paper)",
-        overflow: "hidden",
-        boxShadow: "0 20px 60px rgba(18,17,16,0.3)",
+        display: "grid",
+        gridTemplateColumns: "clamp(24px, 5vw, 60px) 1fr",
+        gap: 0,
+        padding: "0 clamp(24px, 6vw, 80px)",
+        marginBottom: "clamp(40px, 5vh, 72px)",
+        position: "relative",
+        zIndex: 1,
       }}
     >
-      {/* Photo slot */}
-      {/* Region photo */}
-      {(() => {
-        const MAP: Record<string, string> = {
-          "simien-escarpment.webp":
-            "/media/regions/Simien-Mountains-Ethiopia-Tours-and-Travel-Packages-480.webp",
-          "lalibela-beta-giyorgis.webp":
-            "/media/tours/Lalibela-Ethiopia-Tours-480.webp",
-          "addis-merkato-morning.webp":
-            "/media/tours/Half-Day-Addis-Ababa-Tour-to-National-Museum-Trinity-Cathedral-Merkato-480.webp",
-          "omo-valley-hamar.webp":
-            "/media/regions/Omo-Valley-Tribe-Ethiopia-Tour-Travel-Package-480.webp",
-          "danakil-dallol-acid.webp":
-            "/media/regions/Dalol-Danakil-Depression-Ethiopia-Tours-and-Holiday-Packages-480.webp",
-        };
-        const src = MAP[region.imageSlot];
-        return src ? (
-          <img
-            src={src}
-            alt={region.imageDescription}
-            width={750}
-            height={500}
-            loading="lazy"
-            decoding="async"
-            style={{
-              width: "100%",
-              height: 130,
-              objectFit: "cover",
-              display: "block",
-            }}
-          />
-        ) : (
-          <div
-            className="photo-slot"
-            data-photo={region.imageDescription}
-            role="img"
-            aria-label={region.imageDescription}
-            style={{ height: 130 }}
-          />
-        );
-      })()}
-      <div style={{ padding: "18px 20px 22px" }}>
-        {/* Name row */}
-        <div
+      <div
+        style={{
+          writingMode: "vertical-rl",
+          fontFamily: "var(--font-body)",
+          fontSize: 10,
+          letterSpacing: "0.2em",
+          textTransform: "uppercase",
+          color: "var(--ochre)",
+          alignSelf: "start",
+          paddingTop: 4,
+        }}
+      >
+        {label}
+      </div>
+      <div>
+        <h2
           style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: 10,
-            marginBottom: 8,
+            fontFamily: "var(--font-display)",
+            fontVariationSettings: '"opsz" 72, "wght" 600',
+            fontSize: "clamp(2.5rem, 6vw, 7rem)",
+            color: "var(--ink)",
+            lineHeight: 1.0,
+            letterSpacing: "-0.025em",
+            marginBottom: 16,
           }}
         >
+          {headline}
+        </h2>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "clamp(13px, 1.2vw, 15px)",
+            color: "var(--ink)",
+            opacity: 0.6,
+            maxWidth: 540,
+            lineHeight: 1.7,
+          }}
+        >
+          {subline}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A single control on the map plate. All colour and hover state lives in the
+ * `.cte-map-btn` class so keyboard focus gets the same treatment as hover.
+ */
+function MapButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      className="cte-map-btn"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      style={{
+        minWidth: 34,
+        height: 34,
+        padding: "0 12px",
+        cursor: "none",
+        fontSize: 10,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+
+/**
+ * Overlay controls on the map plate.
+ *
+ * Zoom is provided by Leaflet's own control (top-right), which keeps its
+ * keyboard bindings and screen-reader labels — this component adds only the
+ * "fit" action, styled to the site palette.
+ */
+function MapControls({ onFit }: { onFit: () => void }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 12,
+        left: 12,
+        zIndex: 800,
+        display: "flex",
+        gap: 6,
+      }}
+    >
+      <MapButton label="Fit all destinations" onClick={onFit}>
+        Fit
+      </MapButton>
+    </div>
+  );
+}
+
+/** Shown when every tile request fails — the plate is never just blank. */
+function TileErrorNotice({ message }: { message: string }) {
+  return (
+    <div
+      role="status"
+      style={{
+        position: "absolute",
+        bottom: 16,
+        left: 16,
+        right: 16,
+        zIndex: 800,
+        padding: "12px 16px",
+        borderRadius: 6,
+        backgroundColor: "var(--indigo)",
+        color: "var(--paper)",
+        fontFamily: "var(--font-body)",
+        fontSize: 12,
+        lineHeight: 1.5,
+        boxShadow: "0 10px 30px rgba(18,17,16,0.3)",
+      }}
+    >
+      {message}
+    </div>
+  );
+}
+
+
+/**
+ * The text half of the map: category filters plus a plain list of
+ * destinations. Kept as real buttons so the whole section is reachable by
+ * keyboard and by screen reader, not only by mouse on the map.
+ */
+function DestinationPanel({
+  destinations,
+  total,
+  activeId,
+  activeCategory,
+  hint,
+  onCategoryChange,
+  onSelect,
+  onFit,
+}: {
+  destinations: Destination[];
+  total: number;
+  activeId: string | null;
+  activeCategory: DestinationCategory | "all";
+  hint?: string;
+  onCategoryChange: (category: DestinationCategory | "all") => void;
+  onSelect: (destination: Destination | null) => void;
+  onFit: () => void;
+}) {
+  const categoriesWithContent = DESTINATION_CATEGORIES.filter((category) =>
+    destinations.some((d) => d.category === category),
+  );
+
+  return (
+    <div>
+      {/* Filters — only categories that actually have destinations appear */}
+      <div
+        role="group"
+        aria-label="Filter destinations by type"
+        style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}
+      >
+        <FilterChip
+          active={activeCategory === "all"}
+          count={total}
+          onClick={() => onCategoryChange("all")}
+        >
+          All
+        </FilterChip>
+        {categoriesWithContent.map((category) => (
+          <FilterChip
+            key={category}
+            active={activeCategory === category}
+            count={destinations.filter((d) => d.category === category).length}
+            color={CATEGORY_COLOR[category]}
+            onClick={() => onCategoryChange(category)}
+          >
+            {CATEGORY_LABELS[category]}
+          </FilterChip>
+        ))}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 8,
+          paddingBottom: 8,
+          borderBottom: "1px solid rgba(18,17,16,0.12)",
+        }}
+      >
+        <span style={panelMetaStyle}>
+          {destinations.length} place{destinations.length === 1 ? "" : "s"}
+        </span>
+        <button type="button" onClick={onFit} style={panelLinkStyle}>
+          Fit map
+        </button>
+      </div>
+
+      {/* Prompt shown until something is selected */}
+      {hint && !activeId && destinations.length > 0 && (
+        <p
+          style={{
+            margin: "0 0 8px",
+            fontFamily: "var(--font-body)",
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--ochre)",
+          }}
+        >
+          {hint}
+        </p>
+      )}
+
+      {destinations.length === 0 ? (
+        <p style={panelEmptyStyle}>
+          Nothing in this category yet. Try another filter.
+        </p>
+      ) : (
+        <ul style={panelListStyle}>
+          {destinations.map((destination, index) => (
+            <DestinationRow
+              key={destination.id}
+              destination={destination}
+              index={index}
+              selected={destination.id === activeId}
+              onSelect={onSelect}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+const panelMetaStyle: React.CSSProperties = {
+  fontFamily: "var(--font-body)",
+  fontSize: 10,
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "var(--ink)",
+  opacity: 0.5,
+};
+
+const panelLinkStyle: React.CSSProperties = {
+  border: "none",
+  background: "none",
+  cursor: "none",
+  padding: 0,
+  fontFamily: "var(--font-body)",
+  fontSize: 10,
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "var(--ochre)",
+};
+
+const panelEmptyStyle: React.CSSProperties = {
+  fontFamily: "var(--font-body)",
+  fontSize: 13,
+  lineHeight: 1.6,
+  color: "var(--ink)",
+  opacity: 0.6,
+  padding: "16px 0",
+};
+
+const panelListStyle: React.CSSProperties = {
+  listStyle: "none",
+  margin: 0,
+  padding: 0,
+  maxHeight: "clamp(320px, 58vh, 620px)",
+  overflowY: "auto",
+};
+
+
+/** One destination in the sidebar list. Clicking toggles the selection. */
+function DestinationRow({
+  destination,
+  index,
+  selected,
+  onSelect,
+}: {
+  destination: Destination;
+  index: number;
+  selected: boolean;
+  onSelect: (destination: Destination | null) => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        className="dest-row"
+        data-selected={selected}
+        aria-pressed={selected}
+        onClick={() => onSelect(selected ? null : destination)}
+        style={{
+          display: "block",
+          width: "100%",
+          textAlign: "left",
+          border: "none",
+          borderBottom: "1px solid rgba(18,17,16,0.08)",
+          background: "transparent",
+          cursor: "none",
+          padding: "12px 10px",
+          borderRadius: 4,
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <span
-            className="geez"
             style={{
               fontFamily: "var(--font-geez)",
-              fontSize: "1.4rem",
-              color: "var(--ochre)",
-              lineHeight: 1,
+              fontSize: 12,
+              // Indigo for legibility — the category ring lives on the pin
+              color: "var(--indigo)",
+              minWidth: 20,
             }}
           >
-            {region.geezNumeral}
+            {destination.numeral ?? index + 1}
           </span>
           <span
             style={{
               fontFamily: "var(--font-display)",
-              fontVariationSettings: '"opsz" 18, "wght" 600',
-              fontSize: "1rem",
-              color: "var(--paper)",
+              fontVariationSettings: '"opsz" 24, "wght" 500',
+              fontSize: 15,
+              letterSpacing: "-0.01em",
+              color: "var(--ink)",
             }}
           >
-            {region.name}
+            {destination.name}
           </span>
+        </span>
+        <span
+          style={{
+            display: "block",
+            marginTop: 3,
+            marginLeft: 30,
+            fontFamily: "var(--font-body)",
+            fontSize: 11,
+            lineHeight: 1.5,
+            color: "var(--ink)",
+            opacity: 0.55,
+          }}
+        >
+          {destination.tagline}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function FilterChip({
+  active,
+  count,
+  color,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  count: number;
+  color?: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        border: `1px solid ${active ? "transparent" : "rgba(18,17,16,0.2)"}`,
+        // Indigo when selected: paper text on ochre/sulphur would fail AA.
+        backgroundColor: active ? "var(--indigo)" : "transparent",
+        color: active ? "var(--paper)" : "var(--ink)",
+        borderRadius: 999,
+        padding: "5px 11px",
+        cursor: "none",
+        fontFamily: "var(--font-body)",
+        fontSize: 11,
+        letterSpacing: "0.02em",
+        transition: `background-color ${DURATION.micro}s ease, color ${DURATION.micro}s ease`,
+      }}
+    >
+      {/* Category swatch — the outline keeps it visible on the active chip */}
+      {color && (
+        <span
+          aria-hidden="true"
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: 999,
+            backgroundColor: color,
+            outline:
+              "1px solid color-mix(in srgb, var(--paper) 65%, transparent)",
+            outlineOffset: 1,
+          }}
+        />
+      )}
+      {children}
+      <span style={{ opacity: 0.65, fontSize: 10 }}>{count}</span>
+    </button>
+  );
+}
+
+/**
+ * Detail card for the selected destination.
+ *
+ * Deliberately not a modal: the map stays pan/zoomable behind it, which is how
+ * people actually browse a map. Escape closes it (handled by the parent) and
+ * the close button is a real button with an accessible name.
+ */
+function DestinationCard({
+  destination,
+  onClose,
+}: {
+  destination: Destination;
+  onClose: () => void;
+}) {
+  const image = destination.image
+    ? buildSrcSet(destination.imageFolder ?? "regions", destination.image)
+    : null;
+
+  const relatedTours = (destination.tourIds ?? [])
+    .map((id) => tours.find((tour) => tour.id === id))
+    .filter((tour): tour is (typeof tours)[number] => Boolean(tour));
+
+  const facts: Array<[string, string]> = [];
+  if (destination.bestSeason) facts.push(["Best season", destination.bestSeason]);
+  if (destination.altitude) facts.push(["Altitude", destination.altitude]);
+  if (destination.daysNeeded) facts.push(["Days needed", destination.daysNeeded]);
+  if (destination.howToGetThere)
+    facts.push(["Getting there", destination.howToGetThere]);
+
+  return (
+    <motion.aside
+      initial={{ opacity: 0, x: 24 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 24 }}
+      transition={{ duration: DURATION.ui, ease: EASE_FM.outCubic }}
+      aria-label={`${destination.name} details`}
+      className="map-card"
+      style={{
+        position: "absolute",
+        top: 16,
+        right: 16,
+        width: 320,
+        maxHeight: "calc(100% - 32px)",
+        // The body scrolls; the header and close button stay pinned
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        zIndex: 900,
+        borderRadius: 10,
+        backgroundColor: "var(--paper)",
+        boxShadow: "0 18px 48px rgba(18,17,16,0.28)",
+        border: "1px solid rgba(18,17,16,0.08)",
+      }}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close details"
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          zIndex: 2,
+          border: "none",
+          borderRadius: 999,
+          width: 26,
+          height: 26,
+          cursor: "none",
+          backgroundColor: "color-mix(in srgb, var(--paper) 88%, transparent)",
+          color: "var(--ink)",
+          fontFamily: "var(--font-body)",
+          fontSize: 15,
+          lineHeight: 1,
+          boxShadow: "0 2px 8px rgba(18,17,16,0.18)",
+        }}
+      >
+        ×
+      </button>
+
+      {image && destination.imageAlt && (
+        <div style={{ height: 150, flexShrink: 0 }}>
+          <ResponsiveImage
+            src={image.src}
+            srcSet={image.srcSet}
+            lqip={image.lqip}
+            alt={destination.imageAlt}
+            width={640}
+            height={300}
+            sizes="320px"
+          />
         </div>
-        {/* Tagline */}
+      )}
+
+      <div
+        style={{
+          padding: image ? "14px 16px 16px" : "40px 40px 16px 16px",
+          overflowY: "auto",
+          flex: "1 1 auto",
+          minHeight: 0,
+        }}
+      >
+        {destination.geezName && (
+          <span
+            style={{
+              display: "block",
+              fontFamily: "var(--font-geez)",
+              fontSize: 15,
+              // Matches the ochre section labels used site-wide
+              color: "var(--ochre)",
+              marginBottom: 2,
+            }}
+          >
+            {destination.geezName}
+          </span>
+        )}
+
+        <h3
+          style={{
+            fontFamily: "var(--font-display)",
+            fontVariationSettings: '"opsz" 32, "wght" 600',
+            fontSize: 21,
+            letterSpacing: "-0.02em",
+            color: "var(--ink)",
+            marginBottom: 6,
+          }}
+        >
+          {destination.name}
+        </h3>
+
         <p
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 12,
             lineHeight: 1.6,
-            color: "var(--paper)",
-            opacity: 0.8,
-            marginBottom: 14,
+            color: "var(--ink)",
+            opacity: 0.6,
+            marginBottom: 12,
           }}
         >
-          {region.tagline}
+          {destination.tagline}
         </p>
-        {/* Meta */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[
-            { label: "Best season", value: region.bestSeason },
-            { label: "Getting there", value: region.howToGetThere },
-            { label: "Days needed", value: region.daysNeeded },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <div
-                style={{
-                  fontSize: 8,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: "var(--ochre)",
-                  marginBottom: 2,
-                }}
-              >
-                {label}
+
+
+
+        {destination.description.split("\n\n").map((paragraph, index) => (
+          <p
+            key={index}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 12.5,
+              lineHeight: 1.65,
+              color: "var(--ink)",
+              marginBottom: 10,
+            }}
+          >
+            {paragraph}
+          </p>
+        ))}
+
+        {facts.length > 0 && (
+          <dl
+            style={{
+              margin: "14px 0 0",
+              paddingTop: 12,
+              borderTop: "1px solid rgba(18,17,16,0.12)",
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            {facts.map(([label, value]) => (
+              <div key={label}>
+                <dt
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 9,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "var(--ochre)",
+                  }}
+                >
+                  {label}
+                </dt>
+                <dd
+                  style={{
+                    margin: "2px 0 0",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 12,
+                    lineHeight: 1.55,
+                    color: "var(--ink)",
+                  }}
+                >
+                  {value}
+                </dd>
               </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--paper)",
-                  opacity: 0.75,
-                  lineHeight: 1.45,
-                }}
-              >
-                {value}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </dl>
+        )}
+
+        {relatedTours.length > 0 && (
+          <ul
+            style={{
+              listStyle: "none",
+              margin: "14px 0 0",
+              padding: 0,
+              display: "grid",
+              gap: 6,
+            }}
+          >
+            {relatedTours.map((tour) => (
+              <li key={tour.id}>
+                <a
+                  href={tour.liveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    // Long tour names are clamped so the list stays scannable
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                    color: "var(--indigo)",
+                    textDecoration: "underline",
+                    textUnderlineOffset: 3,
+                  }}
+                >
+                  {tour.duration}-day tour: {tour.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {destination.liveUrl && (
+          <a
+            href={destination.liveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-block",
+              marginTop: 14,
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              // Ink on ochre = 5.9:1; paper on ochre fails AA at this size
+              color: "var(--ink)",
+              backgroundColor: "var(--ochre)",
+              padding: "8px 14px",
+              borderRadius: 4,
+              textDecoration: "none",
+            }}
+          >
+            See tours here
+          </a>
+        )}
       </div>
-      <button
-        onClick={onClose}
-        aria-label={`Close ${region.name} details`}
-        style={{
-          position: "absolute",
-          top: 8,
-          right: 8,
-          background: "rgba(18,17,16,0.5)",
-          border: "none",
-          color: "var(--paper)",
-          width: 26,
-          height: 26,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "none",
-          fontSize: 14,
-        }}
-      >
-        ×
-      </button>
-    </motion.div>
+    </motion.aside>
   );
 }
 
-// ── Compass rose (hand-drawn SVG) ────────────────────────────────────────────
-
-function CompassRose({
-  cx,
-  cy,
-  size,
-}: {
-  cx: number;
-  cy: number;
-  size: number;
-}) {
-  const s = size;
-  return (
-    <g aria-hidden="true" opacity={0.35}>
-      {/* N/S arms */}
-      <line
-        x1={cx}
-        y1={cy - s}
-        x2={cx}
-        y2={cy + s}
-        stroke="var(--ink)"
-        strokeWidth={0.02}
-      />
-      {/* E/W arms */}
-      <line
-        x1={cx - s}
-        y1={cy}
-        x2={cx + s}
-        y2={cy}
-        stroke="var(--ink)"
-        strokeWidth={0.02}
-      />
-      {/* Diagonal arms (shorter) */}
-      <line
-        x1={cx - s * 0.6}
-        y1={cy - s * 0.6}
-        x2={cx + s * 0.6}
-        y2={cy + s * 0.6}
-        stroke="var(--ink)"
-        strokeWidth={0.012}
-      />
-      <line
-        x1={cx + s * 0.6}
-        y1={cy - s * 0.6}
-        x2={cx - s * 0.6}
-        y2={cy + s * 0.6}
-        stroke="var(--ink)"
-        strokeWidth={0.012}
-      />
-      {/* North arrowhead */}
-      <path
-        d={`M ${cx} ${cy - s} L ${cx - 0.1} ${cy - s + 0.25} L ${cx} ${cy - s + 0.15} L ${cx + 0.1} ${cy - s + 0.25} Z`}
-        fill="var(--ochre)"
-        opacity={0.8}
-      />
-      {/* N label */}
-      <text
-        x={cx}
-        y={cy - s - 0.12}
-        fontFamily="var(--font-body)"
-        fontSize={0.18}
-        fill="var(--ink)"
-        textAnchor="middle"
-        letterSpacing="0.06em"
-      >
-        N
-      </text>
-      {/* Centre circle */}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={0.07}
-        fill="var(--paper)"
-        stroke="var(--ink)"
-        strokeWidth={0.02}
-      />
-    </g>
-  );
-}

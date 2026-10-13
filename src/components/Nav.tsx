@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { AudioToggle } from "./AudioToggle";
 import { siteContent } from "@/data/content";
-import { DURATION, EASE_FM, STAGGER, DELAY } from "@/lib/motion";
 import { useI18n } from "@/hooks/useI18n";
+import { useLocation } from "react-router-dom";
+import { useInternalLink } from "@/hooks/useInternalLink";
+import { DURATION, EASE_FM, STAGGER, DELAY } from "@/lib/motion";
 import type { AudienceMode } from "@/sections/AudienceChooser";
 import type { Lang } from "@/App";
 
@@ -25,13 +27,17 @@ export function Nav({
   const navRef = useRef<HTMLElement>(null);
   const t = useI18n(lang);
   const { logoGeez } = siteContent.nav;
+  const location = useLocation();
+  const internalLink = useInternalLink();
 
   const navLinks = [
-    { label: t.tours, href: "#popular-tours" },
-    { label: t.destinations, href: "#scroll-story" },
-    { label: t.whenToGo, href: "#when-to-go" },
-    { label: t.planTrip, href: "#plan-trip" },
+    { label: t.tours, href: "/tours" },
+    { label: t.destinations, href: "/destinations" },
+    { label: t.whenToGo, href: "/when-to-go" },
+    { label: t.planTrip, href: "/plan" },
   ];
+
+  const logoHref = location.pathname === "/" ? "#" : "/";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -80,8 +86,9 @@ export function Nav({
     >
       {/* Logo */}
       <a
-        href="#"
+        href={logoHref}
         aria-label={t.home}
+        onClick={internalLink(logoHref)}
         style={{
           textDecoration: "none",
           display: "flex",
@@ -139,12 +146,13 @@ export function Nav({
               label={link.label}
               duration={DURATION.ui}
               easeFm={EASE_FM.outExpo}
+              onClick={internalLink(link.href)}
             />
           </li>
         ))}
       </ul>
 
-      {/* Right: audience toggle + lang toggle + sound + hamburger */}
+      {/* Right: audience + lang + sound + hamburger */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         {/* Audience toggle */}
         <div
@@ -220,7 +228,6 @@ export function Nav({
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
           style={{
-            display: "none",
             background: "none",
             border: "none",
             cursor: "none",
@@ -255,6 +262,7 @@ export function Nav({
         initial={false}
         animate={{ x: menuOpen ? 0 : "100%" }}
         transition={{ duration: DURATION.scene, ease: [...EASE_FM.inOutCubic] }}
+        aria-hidden={!menuOpen}
         style={{
           position: "fixed",
           top: 0,
@@ -269,13 +277,15 @@ export function Nav({
           flexDirection: "column",
           gap: 8,
         }}
-        aria-hidden={!menuOpen}
       >
         {navLinks.map((link, i) => (
           <motion.a
             key={link.href}
             href={link.href}
-            onClick={() => setMenuOpen(false)}
+            onClick={(e) => {
+              setMenuOpen(false);
+              internalLink(link.href)(e);
+            }}
             initial={{ x: 40, opacity: 0 }}
             animate={{ x: menuOpen ? 0 : 40, opacity: menuOpen ? 1 : 0 }}
             transition={{
@@ -297,13 +307,14 @@ export function Nav({
           </motion.a>
         ))}
 
-        {/* Audience + lang toggles in mobile drawer */}
+        {/* Audience + lang in mobile drawer */}
         <div
           style={{ marginTop: 24, display: "flex", gap: 8, flexWrap: "wrap" }}
         >
           {(["visitor", "local"] as AudienceMode[]).map((mode) => (
             <button
               key={mode}
+              aria-pressed={audience === mode}
               onClick={() => {
                 onAudienceChange(mode);
                 setMenuOpen(false);
@@ -326,6 +337,7 @@ export function Nav({
           {(["en", "am"] as Lang[]).map((l) => (
             <button
               key={l}
+              aria-pressed={lang === l}
               onClick={() => onLangChange(l)}
               style={{
                 fontFamily:
@@ -354,15 +366,18 @@ function NavLink({
   label,
   duration,
   easeFm,
+  onClick,
 }: {
   href: string;
   label: string;
   duration: number;
   easeFm: readonly number[];
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   return (
     <a
       href={href}
+      onClick={onClick}
       style={{
         position: "relative",
         fontFamily: "var(--font-body)",

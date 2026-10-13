@@ -6,6 +6,46 @@ import gsap from "gsap";
 import { LENIS_CONFIG } from "@/lib/motion";
 
 /**
+ * Module-level handle to the one Lenis instance (created by useLenis).
+ * Scroll helpers below MUST go through this — creating a second Lenis
+ * alongside the first causes double-scrolling and broken ScrollTrigger sync.
+ */
+let activeLenis: Lenis | null = null;
+
+/** The live Lenis instance, or null under prefers-reduced-motion / before init. */
+export function getLenis(): Lenis | null {
+  return activeLenis;
+}
+
+/**
+ * Lenis-aware jump to the top of the document (used on every route change).
+ * Never creates a second Lenis instance — falls back to native when the
+ * singleton is absent (reduced motion, or called before useLenis's effect).
+ */
+export function scrollTop(): void {
+  if (activeLenis) {
+    activeLenis.scrollTo(0, { immediate: true, force: true });
+  } else {
+    window.scrollTo(0, 0);
+  }
+}
+
+/**
+ * Lenis-aware jump straight to an element (deep-link hash targets).
+ * Returns false when the element doesn't exist yet — callers may want to
+ * fall back to scrollTop() in that case.
+ */
+export function scrollToElement(el: HTMLElement): boolean {
+  if (!el) return false;
+  if (activeLenis) {
+    activeLenis.scrollTo(el, { immediate: true, force: true });
+  } else {
+    el.scrollIntoView();
+  }
+  return true;
+}
+
+/**
  * Initializes Lenis smooth scroll and syncs it with GSAP ScrollTrigger.
  *
  * Wiring order that matters:
@@ -36,6 +76,7 @@ export function useLenis() {
     });
 
     lenisRef.current = lenis;
+    activeLenis = lenis;
 
     // Step 2: keep ScrollTrigger scroll position in sync with Lenis
     lenis.on("scroll", ScrollTrigger.update);
@@ -50,6 +91,8 @@ export function useLenis() {
     return () => {
       lenis.destroy();
       gsap.ticker.remove(rafCb);
+      if (activeLenis === lenis) activeLenis = null;
+      lenisRef.current = null;
     };
   }, [reduced]);
 

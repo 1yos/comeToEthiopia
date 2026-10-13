@@ -1,17 +1,25 @@
-﻿import { useRef, useEffect } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { regions } from "@/data/regions";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { siteContent } from "@/data/content";
-import { EASE, SCROLL } from "@/lib/motion";
+import { DURATION } from "@/lib/motion";
 
-// vh of scroll distance allocated per scene (used only for pin sizing)
-const SCENE_VH = SCROLL.pinScrollPerSceneVh;
+/**
+ * Destination story section — time-driven slideshow.
+ *
+ * Advances automatically every AUTO_INTERVAL ms.
+ * Users can navigate forward/backward with arrow buttons or the dot indicators.
+ * Pauses auto-advance while hovered (desktop) or when reduced-motion is set.
+ *
+ * Each scene keeps its own layout and transition — Simien, Lalibela, Addis,
+ * Omo, Danakil all look different. Framer Motion handles the enter/exit
+ * animations using the same character as the previous scroll approach.
+ */
 
-gsap.registerPlugin(ScrollTrigger);
+const AUTO_INTERVAL = 6000; // ms per slide
 
-/** Map region imageSlot filename â†’ processed 480w WebP path */
+/** Map region imageSlot filename → processed 480w WebP path */
 const REGION_IMAGE_PATHS: Record<string, string> = {
   "simien-escarpment.webp":
     "/media/regions/Simien-Mountains-Ethiopia-Tours-and-Travel-Packages-480.webp",
@@ -25,7 +33,6 @@ const REGION_IMAGE_PATHS: Record<string, string> = {
     "/media/regions/Dalol-Danakil-Depression-Ethiopia-Tours-and-Holiday-Packages-480.webp",
 };
 
-/** Shared region photo <img> â€” replaces all photo-slot divs */
 function RegionPhoto({
   region,
   style,
@@ -35,7 +42,6 @@ function RegionPhoto({
 }) {
   const src = REGION_IMAGE_PATHS[region.imageSlot];
   if (!src) {
-    // Fallback placeholder until real photo is supplied
     return (
       <div
         className="photo-slot"
@@ -66,168 +72,324 @@ function RegionPhoto({
   );
 }
 
-/**
- * Pinned scroll-story section: 5 scenes moving north â†’ south.
- * Simien â†’ Lalibela â†’ Addis â†’ Omo â†’ Danakil
- *
- * Each scene has a DIFFERENT layout and transition â€” not a template:
- *   á© Simien:  Full-bleed photo left, text right, enters with a horizontal wipe
- *   áª Lalibela: Full-bleed photo top, text bottom-left overlapping, enters with clip-path from bottom
- *   á« Addis:   Type-only, broadsheet column layout, enters with staggered lines
- *   á¬ Omo:     Split: photo bleeds right edge, text offset lower-left, enters with scale+opacity
- *   á­ Danakil: Full-width, text above photo, Ge'ez giant background, enters with fade + slow zoom
- *
- * The pinned container is 100vh Ã— (scenes Ã— 100vh) tall so each scene gets
- * its own scroll beat.
- */
+// Per-scene Framer Motion variants — each scene has its own character
+const SCENE_VARIANTS = {
+  0: {
+    // Simien — slides in from right
+    enter: { opacity: 0, x: "6%" },
+    center: { opacity: 1, x: "0%" },
+    exit: { opacity: 0, x: "-5%" },
+  },
+  1: {
+    // Lalibela — clips up from bottom
+    enter: { opacity: 0, clipPath: "inset(100% 0 0 0)" },
+    center: { opacity: 1, clipPath: "inset(0% 0 0 0)" },
+    exit: { opacity: 0, clipPath: "inset(0% 0 100% 0)" },
+  },
+  2: {
+    // Addis — gentle scale
+    enter: { opacity: 0, scale: 0.97 },
+    center: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 1.02 },
+  },
+  3: {
+    // Omo — slides in from left
+    enter: { opacity: 0, x: "-6%" },
+    center: { opacity: 1, x: "0%" },
+    exit: { opacity: 0, x: "5%" },
+  },
+  4: {
+    // Danakil — slow zoom out
+    enter: { opacity: 0, scale: 1.04 },
+    center: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.97 },
+  },
+};
+
 export function ScrollStory() {
   const reduced = useReducedMotion();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
-  const scenesRef = useRef<HTMLDivElement[]>([]);
+  const [current, setCurrent] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const total = regions.length;
 
+  const goTo = useCallback(
+    (idx: number) => {
+      setCurrent(((idx % total) + total) % total);
+    },
+    [total],
+  );
+
+  const next = useCallback(() => goTo(current + 1), [goTo, current]);
+  const prev = useCallback(() => goTo(current - 1), [goTo, current]);
+
+  // Auto-advance
   useEffect(() => {
-    if (reduced) return;
+    if (reduced || paused) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+    timerRef.current = setInterval(next, AUTO_INTERVAL);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [reduced, paused, next]);
 
-    const ctx = gsap.context(() => {
-      const scenes = scenesRef.current;
-      const totalVh = (regions.length - 1) * SCENE_VH;
+  // Progress bar width for current slide
+  const progressKey = `${current}-${paused ? "paused" : "running"}`;
 
-      // Pin the sticky wrapper for the full scroll distance
-      ScrollTrigger.create({
-        trigger: containerRef.current,
-        start: "top top",
-        end: `+=${totalVh}vh`,
-        pin: stickyRef.current,
-        pinSpacing: true,
-      });
-
-      // First scene: visible immediately, no animation needed
-      if (scenes[0]) {
-        gsap.set(scenes[0], { opacity: 1, x: 0, y: 0, clipPath: "none" });
-      }
-
-      // Each scene transition is scrubbed to scroll position.
-      // ENTER_FRACTION controls how much of the scene's scroll range is used
-      // for the transition. 1.5 = 150% of the scene height.
-      const ENTER_FRACTION = 1.5;
-
-      scenes.forEach((scene, i) => {
-        if (!scene || i === 0) return;
-
-        const enterVars = getEnterVars(i);
-        const exitVars = getExitVars(i - 1);
-        const prevScene = scenes[i - 1];
-
-        const sceneStartVh = i * SCENE_VH;
-        const enterEndVh = sceneStartVh + SCENE_VH * ENTER_FRACTION;
-
-        // Set initial state before this scene enters
-        gsap.set(scene, enterVars.from);
-
-        // Scrubbed ENTER
-        gsap
-          .timeline({
-            scrollTrigger: {
-              trigger: containerRef.current,
-              start: `top+=${sceneStartVh}vh top`,
-              end: `top+=${enterEndVh}vh top`,
-              scrub: 6,
-            },
-          })
-          .to(scene, { ...enterVars.to, ease: EASE.outCubic });
-
-        // Scrubbed EXIT of previous scene
-        if (prevScene) {
-          gsap
-            .timeline({
-              scrollTrigger: {
-                trigger: containerRef.current,
-                start: `top+=${sceneStartVh}vh top`,
-                end: `top+=${enterEndVh}vh top`,
-                scrub: 6,
-              },
-            })
-            .to(prevScene, { ...exitVars, ease: EASE.inOutCubic });
-        }
-      });
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, [reduced]);
-
+  const transition = {
+    duration: reduced ? 0 : DURATION.scene,
+    ease: [0.16, 1, 0.3, 1] as const,
+  };
 
   return (
-    <div
-      ref={containerRef}
+    <section
       id="scroll-story"
       role="region"
       aria-label="Journey through Ethiopia north to south"
+      style={{
+        position: "relative",
+        height: "100svh",
+        minHeight: 480,
+        overflow: "hidden",
+        backgroundColor: "var(--indigo)",
+      }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
     >
+      {/* ── Slides ── */}
+      <AnimatePresence initial={false} mode="sync">
+        <motion.div
+          key={current}
+          variants={
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (SCENE_VARIANTS as any)[current] ?? SCENE_VARIANTS[0]
+          }
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={transition}
+          style={{ position: "absolute", inset: 0 }}
+          aria-label={`Slide ${current + 1} of ${total}: ${regions[current].name}`}
+        >
+          <SceneLayout region={regions[current]} index={current} />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* ── Section label ── */}
       <div
-        ref={stickyRef}
+        aria-hidden="true"
         style={{
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-          overflow: "hidden",
-          backgroundColor: "var(--indigo)",
+          position: "absolute",
+          top: 80,
+          left: "clamp(24px, 5vw, 64px)",
+          zIndex: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
         }}
       >
-        {/* Section label â€” visible across all scenes */}
+        <span
+          style={{ width: 24, height: 1, backgroundColor: "var(--ochre)" }}
+        />
+        <span
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 10,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--ochre)",
+          }}
+        >
+          {siteContent.scrollStory.sectionLabel}
+        </span>
+      </div>
+
+      {/* ── Navigation controls ── */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "clamp(28px, 5vh, 48px)",
+          left: "clamp(24px, 5vw, 64px)",
+          right: "clamp(24px, 5vw, 64px)",
+          zIndex: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: "clamp(12px, 2vw, 24px)",
+        }}
+      >
+        {/* Prev button */}
+        <NavButton
+          direction="prev"
+          onClick={prev}
+          label="Previous destination"
+        />
+
+        {/* Dot indicators + progress */}
+        <div
+          role="tablist"
+          aria-label="Destination slides"
+          style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}
+        >
+          {regions.map((r, i) => (
+            <button
+              key={r.id}
+              role="tab"
+              aria-selected={i === current}
+              aria-label={`Go to ${r.name}`}
+              onClick={() => goTo(i)}
+              style={{
+                position: "relative",
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "none",
+                height: 20,
+                display: "flex",
+                alignItems: "center",
+                flex: i === current ? "1 1 auto" : "0 0 auto",
+                transition: `flex ${DURATION.scene}s cubic-bezier(0.16,1,0.3,1)`,
+                minWidth: i === current ? 60 : 20,
+              }}
+            >
+              {/* Track */}
+              <div
+                style={{
+                  width: "100%",
+                  height: i === current ? 2 : 1,
+                  backgroundColor:
+                    i === current ? "transparent" : "rgba(241,234,217,0.25)",
+                  borderRadius: 1,
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+              >
+                {i === current && (
+                  <motion.div
+                    key={progressKey}
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{
+                      duration: reduced || paused ? 0 : AUTO_INTERVAL / 1000,
+                      ease: "linear",
+                    }}
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      height: "100%",
+                      backgroundColor: "var(--ochre)",
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Dot (inactive slides) */}
+              {i !== current && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    transform: "translate(-50%,-50%)",
+                    width: 5,
+                    height: 5,
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(241,234,217,0.35)",
+                    transition: `background-color ${DURATION.micro}s ease`,
+                  }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Next button */}
+        <NavButton direction="next" onClick={next} label="Next destination" />
+
+        {/* Slide counter */}
         <div
           aria-hidden="true"
           style={{
-            position: "absolute",
-            top: 80,
-            left: "clamp(24px, 5vw, 64px)",
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
+            fontFamily: "var(--font-body)",
+            fontSize: 11,
+            letterSpacing: "0.1em",
+            color: "var(--paper)",
+            opacity: 0.4,
+            fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
           }}
         >
-          <span
-            style={{ width: 24, height: 1, backgroundColor: "var(--ochre)" }}
-          />
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--ochre)",
-            }}
-          >
-            {siteContent.scrollStory.sectionLabel}
-          </span>
+          {String(current + 1).padStart(2, "0")} /{" "}
+          {String(total).padStart(2, "0")}
         </div>
-
-        {/* Scenes stack on top of each other â€” GSAP handles visibility */}
-        {regions.map((region, i) => (
-          <div
-            key={region.id}
-            ref={(el) => {
-              if (el) scenesRef.current[i] = el;
-            }}
-            style={{
-              position: "absolute",
-              inset: 0,
-              opacity: i === 0 ? 1 : 0,
-            }}
-            aria-hidden={i !== 0}
-            role="article"
-            aria-label={`Scene ${i + 1}: ${region.name}`}
-          >
-            <SceneLayout region={region} index={i} />
-          </div>
-        ))}
       </div>
-    </div>
+    </section>
   );
 }
 
-// â”€â”€ Scene layout variants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Navigation arrow button ──────────────────────────────────────────────────
+
+function NavButton({
+  direction,
+  onClick,
+  label,
+}: {
+  direction: "prev" | "next";
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      data-cursor-label={direction === "next" ? "Next" : "Prev"}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 44,
+        height: 44,
+        flexShrink: 0,
+        background: "none",
+        border: "1px solid rgba(241,234,217,0.25)",
+        cursor: "none",
+        color: "var(--paper)",
+        transition: `border-color ${DURATION.micro}s ease, background-color ${DURATION.micro}s ease`,
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.borderColor = "var(--ochre)";
+        el.style.backgroundColor = "rgba(184,116,42,0.12)";
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.borderColor = "rgba(241,234,217,0.25)";
+        el.style.backgroundColor = "transparent";
+      }}
+    >
+      <svg
+        width="16"
+        height="12"
+        viewBox="0 0 16 12"
+        fill="none"
+        aria-hidden="true"
+        style={{ transform: direction === "prev" ? "scaleX(-1)" : "none" }}
+      >
+        <path
+          d="M0 6H14M9 1L14 6L9 11"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
+// ── Scene layouts (unchanged from original) ──────────────────────────────────
 
 function SceneLayout({
   region,
@@ -236,7 +398,6 @@ function SceneLayout({
   region: (typeof regions)[0];
   index: number;
 }) {
-  // Each scene gets a fundamentally different layout
   switch (index) {
     case 0:
       return <SceneSimien region={region} />;
@@ -253,7 +414,6 @@ function SceneLayout({
   }
 }
 
-/** á© Simien â€” Photo left, text right, indigo background */
 function SceneSimien({ region }: { region: (typeof regions)[0] }) {
   return (
     <div
@@ -264,9 +424,7 @@ function SceneSimien({ region }: { region: (typeof regions)[0] }) {
         backgroundColor: "var(--indigo)",
       }}
     >
-      {/* Photo: full-height left column */}
       <RegionPhoto region={region} style={{ height: "100%" }} />
-      {/* Text: right column */}
       <div
         style={{
           display: "flex",
@@ -281,7 +439,6 @@ function SceneSimien({ region }: { region: (typeof regions)[0] }) {
           textColor="var(--paper)"
         />
       </div>
-      {/* Ge'ez numeral behind text */}
       <GeezBackground
         numeral={region.geezNumeral}
         right="5%"
@@ -292,7 +449,6 @@ function SceneSimien({ region }: { region: (typeof regions)[0] }) {
   );
 }
 
-/** áª Lalibela â€” Full-bleed photo, text overlapping bottom-left */
 function SceneLalibela({ region }: { region: (typeof regions)[0] }) {
   return (
     <div
@@ -302,7 +458,6 @@ function SceneLalibela({ region }: { region: (typeof regions)[0] }) {
         backgroundColor: "var(--ink)",
       }}
     >
-      {/* Full-bleed photo â€” Lalibela */}
       <RegionPhoto region={region} style={{ position: "absolute", inset: 0 }} />
       <div
         style={{
@@ -312,7 +467,6 @@ function SceneLalibela({ region }: { region: (typeof regions)[0] }) {
             "linear-gradient(135deg, rgba(18,17,16,0.85) 0%, transparent 60%)",
         }}
       />
-      {/* Text: bottom-left, overlapping photo */}
       <div
         style={{
           position: "absolute",
@@ -335,7 +489,6 @@ function SceneLalibela({ region }: { region: (typeof regions)[0] }) {
   );
 }
 
-/** á« Addis â€” Type-only, broadsheet layout, paper background */
 function SceneAddis({ region }: { region: (typeof regions)[0] }) {
   return (
     <div
@@ -343,13 +496,13 @@ function SceneAddis({ region }: { region: (typeof regions)[0] }) {
         height: "100%",
         backgroundColor: "var(--paper)",
         display: "grid",
-        gridTemplateColumns: "1fr 2fr 1fr",
+        gridTemplateColumns:
+          "clamp(48px, 8vw, 96px) 1fr clamp(48px, 8vw, 96px)",
         alignItems: "center",
         padding: "clamp(80px, 10vh, 120px) clamp(24px, 6vw, 80px)",
         gap: "clamp(24px, 3vw, 48px)",
       }}
     >
-      {/* Left: Ge'ez numeral column */}
       <div style={{ display: "flex", alignItems: "flex-start", paddingTop: 8 }}>
         <span
           className="geez"
@@ -365,7 +518,6 @@ function SceneAddis({ region }: { region: (typeof regions)[0] }) {
           {region.geezNumeral}
         </span>
       </div>
-      {/* Center: editorial text column */}
       <div>
         <div
           style={{
@@ -424,7 +576,6 @@ function SceneAddis({ region }: { region: (typeof regions)[0] }) {
           {region.details}
         </p>
       </div>
-      {/* Right: metadata column */}
       <div
         style={{ borderLeft: "1px solid rgba(18,17,16,0.12)", paddingLeft: 24 }}
       >
@@ -434,7 +585,6 @@ function SceneAddis({ region }: { region: (typeof regions)[0] }) {
   );
 }
 
-/** á¬ Omo â€” Photo bleeds off right edge, text offset lower-left */
 function SceneOmo({ region }: { region: (typeof regions)[0] }) {
   return (
     <div
@@ -444,7 +594,6 @@ function SceneOmo({ region }: { region: (typeof regions)[0] }) {
         backgroundColor: "var(--ink)",
       }}
     >
-      {/* Photo: large, positioned right, bleeds off edge â€” Omo */}
       <RegionPhoto
         region={region}
         style={{
@@ -455,7 +604,6 @@ function SceneOmo({ region }: { region: (typeof regions)[0] }) {
           height: "100%",
         }}
       />
-      {/* Gradient: left to right */}
       <div
         style={{
           position: "absolute",
@@ -464,7 +612,6 @@ function SceneOmo({ region }: { region: (typeof regions)[0] }) {
             "linear-gradient(to right, rgba(18,17,16,0.92) 0%, rgba(18,17,16,0.6) 45%, transparent 70%)",
         }}
       />
-      {/* Text: lower-left, offset from vertical center */}
       <div
         style={{
           position: "absolute",
@@ -489,7 +636,6 @@ function SceneOmo({ region }: { region: (typeof regions)[0] }) {
   );
 }
 
-/** á­ Danakil â€” Full width, text above full-bleed photo, slow zoom */
 function SceneDanakil({ region }: { region: (typeof regions)[0] }) {
   return (
     <div
@@ -499,9 +645,7 @@ function SceneDanakil({ region }: { region: (typeof regions)[0] }) {
         backgroundColor: "var(--ink)",
       }}
     >
-      {/* Photo: full-bleed â€” Danakil */}
       <RegionPhoto region={region} style={{ position: "absolute", inset: 0 }} />
-      {/* Heavy top gradient */}
       <div
         style={{
           position: "absolute",
@@ -510,7 +654,6 @@ function SceneDanakil({ region }: { region: (typeof regions)[0] }) {
             "linear-gradient(to bottom, rgba(18,17,16,0.92) 0%, rgba(18,17,16,0.3) 50%, rgba(18,17,16,0.7) 100%)",
         }}
       />
-      {/* Text: centered horizontally, upper third */}
       <div
         style={{
           position: "absolute",
@@ -525,7 +668,6 @@ function SceneDanakil({ region }: { region: (typeof regions)[0] }) {
           textColor="var(--paper)"
         />
       </div>
-      {/* Bottom detail: altitude */}
       <div
         style={{
           position: "absolute",
@@ -555,7 +697,7 @@ function SceneDanakil({ region }: { region: (typeof regions)[0] }) {
   );
 }
 
-// â”€â”€ Shared sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared sub-components ────────────────────────────────────────────────────
 
 function SceneText({
   region,
@@ -570,7 +712,6 @@ function SceneText({
 }) {
   return (
     <>
-      {/* Region name + numeral */}
       <div
         style={{
           display: "flex",
@@ -591,23 +732,19 @@ function SceneText({
         >
           {region.geezNumeral}
         </span>
-        <div>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 10,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: accentColor,
-              opacity: 0.8,
-            }}
-          >
-            {region.name}
-          </span>
-        </div>
+        <span
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 10,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: accentColor,
+            opacity: 0.8,
+          }}
+        >
+          {region.name}
+        </span>
       </div>
-
-      {/* Tagline / headline */}
       <h2
         style={{
           fontFamily: "var(--font-display)",
@@ -621,8 +758,6 @@ function SceneText({
       >
         {region.tagline}
       </h2>
-
-      {/* Story */}
       <p
         style={{
           fontFamily: "var(--font-body)",
@@ -635,8 +770,6 @@ function SceneText({
       >
         {region.story}
       </p>
-
-      {/* Meta strip */}
       <SceneMeta
         region={region}
         textColor={textColor}
@@ -664,7 +797,6 @@ function SceneMeta({
     { label: "Days needed", value: region.daysNeeded },
     ...(region.altitude ? [{ label: "Altitude", value: region.altitude }] : []),
   ];
-
   return (
     <div
       style={{
@@ -743,55 +875,4 @@ function GeezBackground({
       {numeral}
     </div>
   );
-}
-
-// â”€â”€ Enter / exit animation variants per scene â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-function getEnterVars(i: number): { from: gsap.TweenVars; to: gsap.TweenVars } {
-  switch (i % 5) {
-    case 0: // Simien â€” wipe from right
-      return {
-        from: { opacity: 0, x: "8%" },
-        to: { opacity: 1, x: "0%" },
-      };
-    case 1: // Lalibela â€” clip-path from bottom
-      return {
-        from: { opacity: 0, clipPath: "inset(100% 0 0 0)" },
-        to: { opacity: 1, clipPath: "inset(0% 0 0 0)" },
-      };
-    case 2: // Addis â€” fade + slight scale up
-      return {
-        from: { opacity: 0, scale: 0.97 },
-        to: { opacity: 1, scale: 1 },
-      };
-    case 3: // Omo â€” slide from left
-      return {
-        from: { opacity: 0, x: "-6%" },
-        to: { opacity: 1, x: "0%" },
-      };
-    case 4: // Danakil â€” fade + slow zoom out
-      return {
-        from: { opacity: 0, scale: 1.04 },
-        to: { opacity: 1, scale: 1 },
-      };
-    default:
-      return { from: { opacity: 0 }, to: { opacity: 1 } };
-  }
-}
-
-function getExitVars(i: number): gsap.TweenVars {
-  switch (i % 5) {
-    case 0:
-      return { opacity: 0, x: "-5%" };
-    case 1:
-      return { opacity: 0, clipPath: "inset(0% 0 100% 0)" };
-    case 2:
-      return { opacity: 0, scale: 1.02 };
-    case 3:
-      return { opacity: 0, x: "5%" };
-    case 4:
-      return { opacity: 0, scale: 0.97 };
-    default:
-      return { opacity: 0 };
-  }
 }

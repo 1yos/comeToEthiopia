@@ -4,16 +4,18 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "npx tsx scripts/check-assets.ts && vite",
-    "build": "npx tsx scripts/check-assets.ts && tsc -b && vite build",
+    "dev": "npx tsx scripts/check-assets.ts && npx tsx scripts/check-destinations.ts && vite",
+    "build": "npx tsx scripts/check-assets.ts && npx tsx scripts/check-destinations.ts && tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "check-assets": "npx tsx scripts/check-assets.ts"
+    "check-assets": "npx tsx scripts/check-assets.ts",
+    "check-data": "npx tsx scripts/check-destinations.ts"
   },
   "dependencies": {
     "@react-three/fiber": "^8.17.10",
     "framer-motion": "^11.3.28",
     "gsap": "^3.12.5",
+    "leaflet": "^1.9.4",
     "lenis": "^1.1.14",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -21,15 +23,13 @@
     "three": "^0.167.1"
   },
   "devDependencies": {
-    "@types/d3-geo": "^3.1.1",
+    "@types/leaflet": "^1.9.22",
     "@types/node": "^26.6.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.167.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
-    "d3-geo": "^3.1.1",
-    "d3-geo-projection": "^4.0.0",
     "glob": "^13.0.6",
     "postcss": "^8.4.41",
     "sharp": "^0.35.4",

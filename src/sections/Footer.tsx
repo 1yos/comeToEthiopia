@@ -115,12 +115,13 @@ export function Footer({ lang }: { lang: import("@/App").Lang }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr auto",
-          gap: 40,
+          gridTemplateColumns: "minmax(0, 1fr) auto",
+          gap: "clamp(24px, 4vw, 40px)",
           alignItems: "flex-end",
           marginBottom: "clamp(48px, 6vh, 80px)",
           borderBottom: "1px solid rgba(241,234,217,0.08)",
           paddingBottom: "clamp(48px, 6vh, 80px)",
+          flexWrap: "wrap",
         }}
       >
         {/* Tagline */}
@@ -140,7 +141,7 @@ export function Footer({ lang }: { lang: import("@/App").Lang }) {
             {footer.tagline}
           </p>
           <a
-            href="#plan-trip"
+            href="/plan"
             data-cursor-label="Plan trip"
             style={{
               fontFamily: "var(--font-body)",
@@ -260,7 +261,7 @@ export function Footer({ lang }: { lang: import("@/App").Lang }) {
               letterSpacing: "0.04em",
             }}
           >
-            Map data: geoBoundaries CC-BY 4.0 · Photos: Come to Ethiopia Tours
+            {siteContent.map.credits}
           </span>
         </div>
 

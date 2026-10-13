@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { siteContent } from "@/data/content";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { DURATION, EASE_FM, STAGGER, SCROLL } from "@/lib/motion";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -16,6 +17,7 @@ gsap.registerPlugin(ScrollTrigger);
  */
 export function Voices() {
   const reduced = useReducedMotion();
+  const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const { voices } = siteContent;
@@ -56,8 +58,9 @@ export function Voices() {
         ref={trackRef}
         style={{
           display: "flex",
+          flexDirection: isMobile ? "column" : "row",
           alignItems: "stretch",
-          width: "max-content",
+          width: isMobile ? "100%" : "max-content",
           minHeight: "100vh",
         }}
       >

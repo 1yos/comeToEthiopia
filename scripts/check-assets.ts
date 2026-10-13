@@ -100,6 +100,29 @@ async function main(): Promise<void> {
     }
   }
 
+  // ── Destination images ──────────────────────────────────────────────────
+  // destinations.ts stores an image basename plus its folder, and the real
+  // path is assembled at runtime by buildSrcSet(). The generic scan above
+  // cannot see those, so validate every `image` / `imageFolder` pair here.
+  // This keeps CMS-authored records honest: a typo fails the build.
+  const destinationsFile = path.join(SRC_DIR, "data", "destinations.ts");
+  if (fs.existsSync(destinationsFile)) {
+    const source = fs.readFileSync(destinationsFile, "utf8");
+    const PAIR = /image:\s*"([^"]+)",\s*imageFolder:\s*"([^"]+)"/g;
+    let pair: RegExpExecArray | null;
+    while ((pair = PAIR.exec(source)) !== null) {
+      const [, base, folder] = pair;
+      const lineNum = source.substring(0, pair.index).split("\n").length;
+      for (const suffix of ["-480.webp", "-lqip.webp"]) {
+        checkPath(
+          `/media/${folder}/${base}${suffix}`,
+          "src/data/destinations.ts",
+          lineNum,
+        );
+      }
+    }
+  }
+
   console.log(`  Scanned: ${scannedCount} source files`);
   console.log(`  Checked: ${checked.size} unique asset paths`);
   console.log(`  Total refs: ${refCount}\n`);

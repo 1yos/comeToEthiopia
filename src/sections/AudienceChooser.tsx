@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { motion } from "framer-motion";
 import { siteContent } from "@/data/content";
 import { DURATION, EASE_FM } from "@/lib/motion";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export type AudienceMode = "visitor" | "local";
 
@@ -23,6 +24,7 @@ interface AudienceChooserProps {
  */
 export function AudienceChooser({ onChoose, current }: AudienceChooserProps) {
   const { audienceChooser } = siteContent;
+  const isMobile = useIsMobile();
 
   const handleKey = useCallback(
     (mode: AudienceMode) => (e: React.KeyboardEvent) => {
@@ -83,7 +85,7 @@ export function AudienceChooser({ onChoose, current }: AudienceChooserProps) {
             aria-label={`${panel.label}: ${panel.sub}`}
             onClick={() => onChoose(panel.mode)}
             onKeyDown={handleKey(panel.mode)}
-            animate={{ flex: isActive ? 3 : 1 }}
+            animate={{ flex: isMobile ? 1 : (isActive ? 3 : 1) }}
             transition={{
               duration: DURATION.scene,
               ease: [...EASE_FM.inOutCubic],

@@ -7,6 +7,7 @@ import {
 } from "@/lib/ethiopianCalendar";
 import { siteContent } from "@/data/content";
 import { DURATION, EASE_FM } from "@/lib/motion";
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 /**
  * When to Go — Ethiopian calendar month scrubber.
@@ -17,6 +18,7 @@ import { DURATION, EASE_FM } from "@/lib/motion";
  */
 export function WhenToGo() {
   const currentMonth = currentEthiopianMonth();
+  const isMobile = useIsMobile();
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const { whenToGo } = siteContent;
 
@@ -118,7 +120,7 @@ export function WhenToGo() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "clamp(160px, 22vw, 260px) 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : "clamp(160px, 22vw, 260px) 1fr",
           gap: 0,
           padding: "0 clamp(24px, 6vw, 80px)",
           position: "relative",

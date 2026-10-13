@@ -1,28 +1,30 @@
 /* ─── CSS Custom Properties ─────────────────────────────────────────────── */
 :root {
-  --ochre:    #B8742A;
-  --indigo:   #1F2A44;
-  --sulphur:  #E3B505;
-  --highland: #3F5B3A;
-  --paper:    #F1EAD9;
-  --ink:      #121110;
+  --ochre: #b8742a;
+  --indigo: #1f2a44;
+  --sulphur: #e3b505;
+  --highland: #3f5b3a;
+  --paper: #f1ead9;
+  --ink: #121110;
 
   /* Derived */
-  --ochre-10:   color-mix(in srgb, var(--ochre) 10%, transparent);
-  --ochre-20:   color-mix(in srgb, var(--ochre) 20%, transparent);
-  --paper-90:   color-mix(in srgb, var(--paper) 90%, transparent);
-  --ink-60:     color-mix(in srgb, var(--ink)   60%, transparent);
+  --ochre-10: color-mix(in srgb, var(--ochre) 10%, transparent);
+  --ochre-20: color-mix(in srgb, var(--ochre) 20%, transparent);
+  --paper-90: color-mix(in srgb, var(--paper) 90%, transparent);
+  --ink-60: color-mix(in srgb, var(--ink) 60%, transparent);
 
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body:    'Bricolage Grotesque', sans-serif;
-  --font-geez:    'Noto Serif Ethiopic', serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Bricolage Grotesque", sans-serif;
+  --font-geez: "Noto Serif Ethiopic", serif;
 
   --lenis-duration: 1.2s;
-  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ─── Reset ─────────────────────────────────────────────────────────────── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -47,12 +49,14 @@ body {
 
 /* Show default cursor for touch devices */
 @media (hover: none) and (pointer: coarse) {
-  body { cursor: auto; }
+  body {
+    cursor: auto;
+  }
 }
 
 /* ─── Grain overlay (SVG noise, felt not seen) ───────────────────────────── */
 body::after {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -63,7 +67,10 @@ body::after {
 }
 
 /* ─── Typography base ────────────────────────────────────────────────────── */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: var(--font-display);
   font-variation-settings: "opsz" 144;
   line-height: 1.05;
@@ -87,9 +94,15 @@ p {
 }
 
 /* ─── Scrollbar (minimal) ────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--ink); }
-::-webkit-scrollbar-thumb { background: var(--ochre); }
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ochre);
+}
 
 /* ─── Selection ──────────────────────────────────────────────────────────── */
 ::selection {
@@ -99,7 +112,9 @@ p {
 
 /* ─── Reduced motion — collapse all durations ───────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -115,7 +130,7 @@ p {
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0,0,0,0);
+  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
 }
@@ -144,4 +159,616 @@ p {
   font-size: 10px;
   opacity: 0.8;
   text-align: left;
+}
+
+/* ─── Map tooltip fadeIn ─────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ─── Interactive map (Leaflet, restyled to the site palette) ──────────────
+   Leaflet ships its own greys and blues. Everything below overrides them so
+   the map reads as part of the warm paper/ochre/indigo design language.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.leaflet-container.cte-map {
+  background-color: var(--paper);
+  font-family: var(--font-body);
+  outline: none;
+}
+
+/* The site hides the native cursor and draws its own — keep that inside the map.
+   Leaflet sets `cursor: pointer` on .leaflet-interactive itself, so the marker
+   and vector rules have to be explicit; inheritance alone is not enough. */
+.leaflet-container.cte-map,
+.leaflet-container.cte-map .leaflet-pane,
+.leaflet-container.cte-map .leaflet-control,
+.leaflet-container.cte-map .leaflet-interactive,
+.leaflet-container.cte-map .leaflet-marker-icon,
+.leaflet-container.cte-map button {
+  cursor: none;
+}
+
+/* Terrain tiles (OpenTopoMap) already ship warm tan/beige — no sepia needed.
+   A light touch only: lift the contrast and keep saturation honest so greens
+   stay green instead of being pushed toward mud by a heavy warm filter. */
+.leaflet-container.cte-map .leaflet-tile-pane {
+  filter: saturate(0.94) contrast(1.06) brightness(1.04);
+}
+
+/* Soft inner edge so the map sits inside the page like a printed plate */
+.leaflet-container.cte-map::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent),
+    inset 0 0 60px color-mix(in srgb, var(--indigo) 10%, transparent);
+}
+
+/* Leaflet's default popup chrome → paper card with site typography */
+.leaflet-container.cte-map .leaflet-popup-content-wrapper,
+.leaflet-container.cte-map .leaflet-popup-tip {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--ink) 22%, transparent);
+}
+
+.leaflet-container.cte-map .leaflet-popup-content {
+  margin: 12px 14px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.leaflet-container.cte-map .leaflet-popup-content strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  margin-bottom: 3px;
+}
+
+.leaflet-container.cte-map a.leaflet-popup-close-button {
+  color: var(--ink);
+  opacity: 0.5;
+}
+
+/* ─── Destination pins (custom divIcons) ─────────────────────────────────── */
+
+.cte-map .cte-marker {
+  background: none;
+  border: none;
+}
+
+.cte-map .cte-marker__inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The visible dot — 30px, centred exactly on the coordinate */
+.cte-map .cte-marker__dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--dot-color, var(--ochre));
+  /* Ink, not the category colour: sulphur/ochre numerals on paper would fail
+     AA. The category still reads from the ring, which is graphic-only. */
+  color: var(--ink);
+  font-family: var(--font-geez);
+  font-size: 13px;
+  line-height: 1;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 30%, transparent);
+  transition:
+    transform 0.25s cubic-bezier(0.33, 1, 0.68, 1),
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+/* Featured destinations get a heavier ring */
+.cte-map .cte-marker--featured .cte-marker__dot {
+  border-width: 3px;
+}
+
+.cte-map .cte-marker:hover .cte-marker__dot,
+.cte-map .cte-marker:focus-visible .cte-marker__dot {
+  transform: scale(1.14);
+}
+
+.cte-map .cte-marker--active .cte-marker__dot {
+  /* Constant indigo: paper-on-sulphur would be illegible, and the selected
+     pin already shows its category in the detail card. */
+  background: var(--indigo);
+  color: var(--paper);
+  transform: scale(1.18);
+}
+
+/* Slow pulse on featured pins — the only motion on the map.
+   Collapsed by the global prefers-reduced-motion rule in this file. */
+.cte-map .cte-marker__pulse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  border: 1.5px solid var(--dot-color, var(--ochre));
+  opacity: 0.5;
+  pointer-events: none;
+  animation: cteMapPulse 2.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes cteMapPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  70% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Focus ring for keyboard users — matches the site's ochre outline */
+.cte-map .leaflet-marker-icon:focus-visible {
+  outline: 2px solid var(--ochre);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+
+/* ─── Map controls ───────────────────────────────────────────────────────── */
+
+.cte-map .leaflet-control-zoom {
+  border: none;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.cte-map .leaflet-control-zoom a {
+  width: 34px;
+  height: 34px;
+  line-height: 32px;
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--indigo);
+  background: var(--paper);
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  border-radius: 0;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.cte-map .leaflet-control-zoom a:first-child {
+  border-radius: 5px 5px 0 0;
+}
+
+.cte-map .leaflet-control-zoom a:last-child {
+  border-bottom: none;
+  border-radius: 0 0 5px 5px;
+}
+
+.cte-map .leaflet-control-zoom a:hover,
+.cte-map .leaflet-control-zoom a:focus {
+  background: var(--ochre);
+  /* Ink, not paper: paper-on-ochre is only 3.2:1 and fails AA */
+  color: var(--ink);
+}
+
+.cte-map .leaflet-control-zoom a.leaflet-disabled {
+  background: color-mix(in srgb, var(--paper) 70%, var(--ink));
+  color: color-mix(in srgb, var(--indigo) 40%, transparent);
+}
+
+/* Attribution — required by the OpenStreetMap and OpenTopoMap licences */
+.cte-map .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  color: var(--ink-60);
+  font-family: var(--font-body);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  padding: 2px 6px;
+  border-radius: 3px 0 0 0;
+}
+
+.cte-map .leaflet-control-attribution a {
+  color: var(--ochre);
+  text-decoration: none;
+}
+
+/* "Fit" / base-map switch buttons on the map plate.
+   Hover/focus use ochre + ink (5.9:1) rather than ochre + paper (3.2:1).
+   Transition duration matches DURATION.micro in /src/lib/motion.ts. */
+.cte-map-btn {
+  border: none;
+  border-radius: 5px;
+  background-color: color-mix(in srgb, var(--paper) 92%, transparent);
+  color: var(--indigo);
+  font-family: var(--font-body);
+  font-weight: 500;
+  box-shadow: 0 4px 14px rgba(18, 17, 16, 0.16);
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease;
+}
+
+.cte-map-btn:hover,
+.cte-map-btn:focus-visible {
+  background-color: var(--ochre);
+  color: var(--ink);
+}
+
+/* ─── Destination list (the text half of the map section) ────────────────── */
+
+.dest-row {
+  transition: background-color 0.25s ease;
+}
+
+.dest-row:hover,
+.dest-row[data-selected="true"] {
+  background-color: color-mix(in srgb, var(--indigo) 6%, transparent);
+}
+
+/* ─── Map layout: two columns on desktop, stacked on small screens ──────── */
+
+@media (max-width: 900px) {
+  .map-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* The card becomes a bottom sheet so the map stays visible above it */
+  .map-card {
+    position: fixed !important;
+    top: auto !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    left: 12px !important;
+    width: auto !important;
+    max-height: 62vh !important;
+  }
+}
+
+/* Touch devices: the custom cursor is not drawn, so restore the native one */
+@media (hover: none) and (pointer: coarse) {
+  .leaflet-container.cte-map,
+  .leaflet-container.cte-map .leaflet-pane,
+  .leaflet-container.cte-map .leaflet-control,
+  .leaflet-container.cte-map .leaflet-interactive,
+  .leaflet-container.cte-map .leaflet-marker-icon,
+  .leaflet-container.cte-map button {
+    cursor: auto;
+  }
+}
+
+/* Tile loading veil — a slow sheen across the paper ground */
+@keyframes cteMapSheen {
+  0% {
+    background-position: 180% 0;
+  }
+  100% {
+    background-position: -80% 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE UTILITIES
+   Breakpoints:
+     --mobile:  < 640px   (phones)
+     --tablet:  640–1023px
+     --desktop: ≥ 1024px
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Nav: show/hide classes ──────────────────────────────────────────────── */
+/* hidden-mobile = visible on desktop, hidden on mobile */
+.hidden-mobile {
+  display: flex;
+}
+
+/* mobile-menu-btn = hidden on desktop, flex on mobile */
+.mobile-menu-btn {
+  display: none;
+}
+
+/* hide-mobile = hidden on mobile only (used for table columns etc.) */
+.hide-mobile {
+  display: block;
+}
+
+@media (max-width: 767px) {
+  .hidden-mobile {
+    display: none !important;
+  }
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+/* ── Two-column grid collapse ────────────────────────────────────────────── */
+/* Any element with data-mobile-stack="true" collapses to 1 column on mobile */
+[data-mobile-stack] {
+  display: grid;
+}
+
+@media (max-width: 767px) {
+  [data-mobile-stack] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Horizontal scroll sections: disable GSAP pin on mobile ─────────────── */
+/* Voices and PopularTours use GSAP horizontal scroll.
+   On mobile they revert to natural vertical scroll.
+   The JS already skips pinning below 768px — this ensures the CSS matches. */
+@media (max-width: 767px) {
+  /* Voices horizontal track */
+  [id="voices"] > div {
+    flex-direction: column !important;
+    width: 100% !important;
+    min-height: unset !important;
+    overflow: visible !important;
+  }
+
+  [id="voices"] > div > div {
+    width: 100% !important;
+    min-width: unset !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(241, 234, 217, 0.08) !important;
+    padding-left: clamp(20px, 5vw, 40px) !important;
+    padding-right: clamp(20px, 5vw, 40px) !important;
+  }
+
+  /* PopularTours rail — stack vertically */
+  [id="popular-tours"] [role="list"] {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  [id="popular-tours"] [role="listitem"] {
+    width: 100% !important;
+    height: clamp(280px, 55vw, 360px) !important;
+  }
+}
+
+/* ── Page grid layouts: all collapse to single column at 767px ───────────── */
+@media (max-width: 767px) {
+  /* All two-column section grids */
+  [id="who-is-this-for"] {
+    flex-direction: column !important;
+  }
+
+  [id="who-is-this-for"] > * {
+    flex: none !important;
+    width: 100% !important;
+    min-height: clamp(200px, 40vw, 280px) !important;
+  }
+
+  /* Map: SVG map stacks below text list */
+  [id="map"] > div {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* When to go: month strip stacks above content */
+  [id="when-to-go"] > div:last-child {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Route builder: results stack below form */
+  [id="route-builder"] > div > div {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Scroll story: all scene grids collapse */
+  [id="scroll-story"] .sticky > div {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr auto !important;
+  }
+}
+
+/* ── Typography: prevent overflow on 360px ───────────────────────────────── */
+@media (max-width: 480px) {
+  /* Clamp already handles most — this catches edge cases */
+  h1 {
+    word-break: break-word;
+  }
+
+  /* Hero headline: the Ethiopian year can be very wide in italic */
+  [id="hero"] h1 {
+    font-size: clamp(3rem, 18vw, 8rem) !important;
+  }
+}
+
+/* ── Page-level padding: tighten on very small screens ──────────────────── */
+@media (max-width: 480px) {
+  section,
+  [role="region"] {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
+/* ── Sticky sidebars: un-sticky on mobile ────────────────────────────────── */
+@media (max-width: 767px) {
+  /* TourDetailPage and TravelerInfoPage sidebars */
+  [style*="position: sticky"][style*="top: 88"] {
+    position: static !important;
+    top: unset !important;
+  }
+}
+
+/* ── Phrase table (CulturePage): collapse columns on mobile ─────────────── */
+@media (max-width: 640px) {
+  /* The 4-column phrase grid wraps to 2 columns */
+  [id="phrases-section"] > div > div {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* ── Tour catalogue rows: simplify on mobile ─────────────────────────────── */
+@media (max-width: 640px) {
+  /* TourDetailPage day grid: number + text stacks */
+  [id="tour-itinerary"] > div {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Destination spreads: stacks to photo-top / text-bottom ─────────────── */
+@media (max-width: 767px) {
+  /* DestinationsPage magazine spreads */
+  [aria-label^="Simien"],
+  [aria-label^="Bale"],
+  [aria-label^="Lalibela"],
+  [aria-label^="Gondar"],
+  [aria-label^="Axum"],
+  [aria-label^="Gheralta"],
+  [aria-label^="Danakil"],
+  [aria-label^="Omo"],
+  [aria-label^="Harar"],
+  [aria-label^="Addis"],
+  [aria-label^="Bahir"],
+  [aria-label^="Sof"] {
+    grid-template-columns: 1fr !important;
+    min-height: unset !important;
+  }
+
+  /* Photo always comes first on mobile regardless of flip */
+  [aria-label^="Simien"] > div:first-child,
+  [aria-label^="Bale"] > div:first-child,
+  [aria-label^="Lalibela"] > div:first-child,
+  [aria-label^="Gondar"] > div:first-child,
+  [aria-label^="Axum"] > div:first-child,
+  [aria-label^="Gheralta"] > div:first-child,
+  [aria-label^="Danakil"] > div:first-child,
+  [aria-label^="Omo"] > div:first-child,
+  [aria-label^="Harar"] > div:first-child,
+  [aria-label^="Addis"] > div:first-child,
+  [aria-label^="Bahir"] > div:first-child,
+  [aria-label^="Sof"] > div:first-child {
+    order: 1 !important;
+    height: clamp(200px, 50vw, 300px) !important;
+  }
+
+  [aria-label^="Simien"] > div:last-child,
+  [aria-label^="Bale"] > div:last-child,
+  [aria-label^="Lalibela"] > div:last-child,
+  [aria-label^="Gondar"] > div:last-child,
+  [aria-label^="Axum"] > div:last-child,
+  [aria-label^="Gheralta"] > div:last-child,
+  [aria-label^="Danakil"] > div:last-child,
+  [aria-label^="Omo"] > div:last-child,
+  [aria-label^="Harar"] > div:last-child,
+  [aria-label^="Addis"] > div:last-child,
+  [aria-label^="Bahir"] > div:last-child,
+  [aria-label^="Sof"] > div:last-child {
+    order: 2 !important;
+  }
+}
+
+/* ── AboutPage two-column contact: stack on mobile ───────────────────────── */
+@media (max-width: 767px) {
+  /* WhyUs staggered grid */
+  [id="why-us"] > div {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* AboutPage story grid */
+  [id="about-story"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── PlanPage tour picker: simplify grid on mobile ───────────────────────── */
+@media (max-width: 640px) {
+  /* Tour pick grid: thumbnail + text + radio */
+  [id="tour-picker"] > button,
+  [id="tour-picker"] > div > button {
+    grid-template-columns: clamp(48px, 12vw, 64px) 1fr auto !important;
+  }
+}
+
+/* ── WhenToGo month bar: allow wrapping, slightly smaller text ───────────── */
+@media (max-width: 480px) {
+  /* Month buttons wrap naturally — just make them slightly smaller */
+  [aria-label="Ethiopian months"] button {
+    font-size: 10px !important;
+    padding: 6px 8px !important;
+  }
+
+  /* Season legend: wrap to two per row */
+  [aria-label="Ethiopian months"] + div {
+    gap: 8px 16px !important;
+  }
+}
+
+/* ── TravelerInfoPage two-column layout: single column on mobile ──────────── */
+@media (max-width: 767px) {
+  [aria-label="Section navigation"] {
+    display: none !important;
+  }
+}
+
+/* ── Hero overlay photo: hide on mobile to avoid occlusion ──────────────── */
+@media (max-width: 767px) {
+  :root {
+    --hero-overlay-display: none;
+  }
+}
+
+/* ── Footer top grid: stack on mobile ───────────────────────────────────── */
+@media (max-width: 640px) {
+  [role="contentinfo"] > div > div:first-of-type {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  [role="contentinfo"] ul[role="list"] {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 10px 20px !important;
+  }
+}
+
+/* ── AudienceChooser: always stack on mobile ────────────────────────────── */
+@media (max-width: 640px) {
+  [id="who-is-this-for"] > * {
+    min-height: clamp(180px, 40vw, 240px) !important;
+  }
+}
+
+/* ── Nav toggles: hide audience/lang on very small screens ──────────────── */
+@media (max-width: 479px) {
+  /* The audience + lang toggles in the nav get too crowded at 360px.
+     They're still accessible in the mobile drawer menu. */
+  [role="group"][aria-label="Audience mode"],
+  [role="group"][aria-label="Language"] {
+    display: none !important;
+  }
 }

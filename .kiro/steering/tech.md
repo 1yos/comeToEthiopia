@@ -15,13 +15,16 @@ Tailwind CSS 3  (theme extended with CSS variables, not hard-coded colors)
 | Smooth scroll | lenis | ~1.2 lerp, RAF-driven |
 | Pinned scroll animations | gsap + ScrollTrigger | Import only what's used |
 | Micro-interactions / page transitions | framer-motion | Named export `motion` |
+| Interactive map | leaflet + @types/leaflet | Real tiles. One instance, in `sections/Map.tsx` |
 | 3D shader effect | @react-three/fiber + three | ONE subtle effect only, lazy-loaded |
 | Router | react-router-dom v6 | For page transitions between routes |
 
 ## What NOT to install
 - No `react-spring` (redundant with framer-motion)
 - No `anime.js` (use GSAP or framer-motion)
-- No tile-map library (Leaflet, Mapbox, Google Maps) — map is hand-drawn SVG
+- No `leaflet` plugin ecosystem (markercluster, draw, routing) — write the small
+  amount of custom logic instead. Leaflet core is the ONLY map dependency.
+- No second map library (Mapbox, Google Maps, MapLibre). Leaflet covers it.
 - No UI component library (shadcn, MUI, Chakra) — everything is custom
 - No icon pack as decoration (Lucide is allowed for functional UI icons only)
 
@@ -33,9 +36,9 @@ src/
   sections/        # One file per page section: Hero, ScrollStory, Map, WhenToGo,
                    #   RouteBuilder, Voices, PlanTrip, Footer
   hooks/           # useEthiopianDate, useLenis, useReducedMotion, useKonami
-  lib/             # ethiopianCalendar.ts, routeScorer.ts, gsapSetup.ts
-  data/            # content.ts, regions.ts, festivals.ts, routes.ts
-  styles/          # globals.css (CSS variables, fonts, grain, resets)
+  lib/             # ethiopianCalendar.ts, routeScorer.ts, geo.ts, gsapSetup.ts
+  data/            # content.ts, regions.ts, destinations.ts, festivals.ts, routes.ts, tours.ts
+  styles/          # globals.css (CSS variables, fonts, grain, resets, leaflet overrides)
   App.tsx          # Root: wraps Lenis, cursor, preloader, sections in order
   main.tsx         # Mount point
 ```
@@ -68,12 +71,35 @@ export interface Festival {
   description: string     // 1–2 sentences, specific
 }
 
+// destinations.ts — CMS boundary. One record per mappable place.
+export interface Destination {
+  id: string             // stable slug, matches routes.ts stop.regionId
+  name: string
+  numeral?: string       // Ge'ez numeral used as the map pin label
+  geezName?: string      // place name in Ethiopic script
+  lat: number            // WGS84 decimal degrees
+  lng: number
+  category: 'nature' | 'history' | 'culture' | 'expedition'
+  featured?: boolean     // larger pin, always listed first
+  tagline: string        // ≤12 words, sensory and specific
+  description: string    // 1–2 paragraphs for the detail card
+  bestSeason?: string
+  howToGetThere?: string
+  daysNeeded?: string
+  altitude?: string
+  image?: string         // basename in public/media/<imageFolder>/, no -480 suffix
+  imageFolder?: 'regions' | 'tours'
+  imageAlt?: string
+  tourIds?: string[]     // ids from tours.ts
+  liveUrl?: string
+}
+
 // routes.ts
 export interface Route {
   id: string
   interests: string[]
   duration: 7 | 10 | 14
-  stops: string[]         // region IDs in order
+  stops: RouteStop[]      // { regionId, nights, notes } — regionId matches Destination.id
   highlights: string[]
 }
 ```
@@ -97,6 +123,25 @@ in `/src/lib/ethiopianCalendar.ts`. Rules:
 - Until real photos are supplied: use labeled `<div>` placeholder slots with
   exact dimensions noted (e.g. `{/* PHOTO: Simien Mountains, golden hour, 
   wide landscape, 1600×900 */}`) rather than generic placeholders.
+
+## Interactive map
+- ONE Leaflet instance, created in `sections/Map.tsx` behind `mapRef`. Never
+  create a map inside a component that re-renders on scroll or selection.
+- Destinations are data, never markup: `Map` takes a `destinations` prop and
+  defaults to `src/data/destinations.ts`. The CMS swap point is that prop.
+- `invalidateSize()` must run after the container settles (the preloader
+  unmounts and webfonts land after mount) — a `ResizeObserver` plus a delayed
+  call covers it. Without this the tiles render into a zero-height pane.
+- Keep `attributionControl: true`. Tiles come from OpenStreetMap/CARTO and the
+  licences require the credit. Restyle the control, never remove it.
+- `scrollWheelZoom` starts disabled so Lenis keeps page scroll; enable it on
+  map click and disable again on mouse-out.
+- Tile look must be warmed to the palette with a CSS filter on
+  `.leaflet-tile-pane` (see globals.css) rather than by shipping custom tiles.
+- Every pin label is a Ge'ez numeral from the destination record. Never
+  hard-code pin coordinates or labels in the component.
+- Always provide a fallback: if tiles fail, the destination list and the
+  `map.tilesError` message carry the section on their own.
 
 ## Three.js shader
 - A single `<GrainShader />` or `<HeatHaze />` component, lazy-loaded.

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { siteContent } from "@/data/content";
 import { DURATION } from "@/lib/motion";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
@@ -26,6 +27,7 @@ export function PlanTrip({
 }: {
   audience: import("@/sections/AudienceChooser").AudienceMode;
 }) {
+  const isMobile = useIsMobile();
   const [formState, setFormState] = useState<FormState>("idle");
   const [data, setData] = useState<FormData>({
     name: "",
@@ -100,7 +102,7 @@ export function PlanTrip({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
           gap: "clamp(40px, 6vw, 100px)",
           padding: "0 clamp(24px, 6vw, 80px)",
           position: "relative",

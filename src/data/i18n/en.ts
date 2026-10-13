@@ -116,7 +116,7 @@ export const en = {
   // Footer
   todayInAddis:       'Today in Addis',
   madeIn:             'Owned and operated by an Ethiopian guide. Based in Addis Ababa.',
-  credits:            'Map data: geoBoundaries CC-BY 4.0 · Photos: Come to Ethiopia Tours',
+  credits:            'Map data © OpenStreetMap contributors, SRTM · tiles © OpenTopoMap · Photos: Come to Ethiopia Tours',
 
   // Generic
   close:              'Close',

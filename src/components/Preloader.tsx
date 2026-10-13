@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { DURATION, EASE_FM, PRELOADER } from "@/lib/motion";
 
@@ -23,20 +23,19 @@ const GEEZ_DIGITS = [
 
 /**
  * Preloader: Lalibela cross draws via stroke-dashoffset, Ge'ez counter ticks up,
- * then a horizontal wipe reveals the hero. Skipped instantly under reduced-motion.
- * All timing comes from /lib/motion.ts PRELOADER constants.
+ * then a horizontal wipe slides the panel off to the left, revealing the hero.
+ * Skipped instantly under reduced-motion.
  */
 export function Preloader({ onComplete }: PreloaderProps) {
   const reduced = useReducedMotion();
-  const [visible, setVisible] = useState(true);
   const [counter, setCounter] = useState(0);
-  const [wiping, setWiping] = useState(false);
+  const [phase, setPhase] = useState<"loading" | "wiping" | "done">("loading");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (reduced) {
-      const t = setTimeout(onComplete, 100);
-      return () => clearTimeout(t);
+      onComplete();
+      return;
     }
 
     let count = 0;
@@ -45,7 +44,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
       setCounter(Math.min(count, PRELOADER.ticks - 1));
       if (count >= PRELOADER.ticks) {
         clearInterval(timerRef.current!);
-        setTimeout(() => setWiping(true), PRELOADER.pauseBeforeWipe);
+        setTimeout(() => setPhase("wiping"), PRELOADER.pauseBeforeWipe);
       }
     }, PRELOADER.tickInterval);
 
@@ -54,116 +53,104 @@ export function Preloader({ onComplete }: PreloaderProps) {
     };
   }, [reduced, onComplete]);
 
-  const handleWipeComplete = () => {
-    setVisible(false);
-    onComplete();
-  };
-
-  if (!visible) return null;
+  if (phase === "done") return null;
 
   return (
-    <AnimatePresence>
-      {!wiping ? (
-        <motion.div
-          key="preloader"
-          exit={{ x: "-100%" }}
-          transition={{
-            duration: PRELOADER.wipeDuration,
-            ease: [...EASE_FM.inOutCubic],
-          }}
+    <motion.div
+      key="preloader-panel"
+      initial={{ x: 0 }}
+      animate={{ x: phase === "wiping" ? "-100%" : 0 }}
+      transition={
+        phase === "wiping"
+          ? { duration: PRELOADER.wipeDuration, ease: [...EASE_FM.inOutCubic] }
+          : { duration: 0 }
+      }
+      onAnimationComplete={() => {
+        if (phase === "wiping") {
+          setPhase("done");
+          onComplete();
+        }
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9997,
+        backgroundColor: "var(--indigo)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      aria-label="Loading Come to Ethiopia"
+      role="status"
+    >
+      <LalibelaCross />
+
+      <div
+        style={{
+          marginTop: 48,
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+        }}
+      >
+        <span
           style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9997,
-            backgroundColor: "var(--indigo)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
+            fontSize: "2.5rem",
+            lineHeight: 1,
+            minWidth: "2ch",
+            textAlign: "center",
+            fontFamily: "var(--font-geez)",
+            color: "var(--paper)",
+            opacity: 0.6,
           }}
-          aria-label="Loading Come to Ethiopia"
-          role="status"
+          aria-live="polite"
+          aria-label={`Loading: ${counter + 1} of ${PRELOADER.ticks}`}
         >
-          <LalibelaCross />
-
-          <div
-            style={{
-              marginTop: 48,
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              fontFamily: "var(--font-geez)",
-              color: "var(--paper)",
-              opacity: 0.6,
-            }}
-          >
-            <span
-              style={{
-                fontSize: "2.5rem",
-                lineHeight: 1,
-                minWidth: "2ch",
-                textAlign: "center",
-              }}
-              aria-live="polite"
-              aria-label={`Loading: ${counter + 1} of ${PRELOADER.ticks}`}
-            >
-              {GEEZ_DIGITS[counter]}
-            </span>
-            <span
-              style={{
-                fontSize: 11,
-                fontFamily: "var(--font-body)",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                opacity: 0.5,
-                color: "var(--paper)",
-              }}
-            >
-              Loading
-            </span>
-          </div>
-
-          <button
-            onClick={() => setWiping(true)}
-            style={{
-              position: "absolute",
-              bottom: 32,
-              right: 32,
-              background: "none",
-              border: "none",
-              color: "var(--paper)",
-              opacity: 0.4,
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              cursor: "none",
-            }}
-            aria-label="Skip loading animation"
-          >
-            Skip
-          </button>
-        </motion.div>
-      ) : (
-        <motion.div
-          key="wipe"
-          initial={{ x: 0 }}
-          animate={{ x: "-100%" }}
-          transition={{
-            duration: PRELOADER.wipeDuration,
-            ease: [...EASE_FM.inOutCubic],
-          }}
-          onAnimationComplete={handleWipeComplete}
+          {GEEZ_DIGITS[counter]}
+        </span>
+        <span
           style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9997,
-            backgroundColor: "var(--indigo)",
+            fontSize: 11,
+            fontFamily: "var(--font-body)",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            color: "var(--paper)",
+            opacity: 0.3,
           }}
-          aria-hidden="true"
-        />
-      )}
-    </AnimatePresence>
+        >
+          Loading
+        </span>
+      </div>
+
+      <button
+        onClick={() => setPhase("wiping")}
+        style={{
+          position: "absolute",
+          bottom: 32,
+          right: 32,
+          background: "none",
+          border: "none",
+          color: "var(--paper)",
+          opacity: 0.3,
+          fontFamily: "var(--font-body)",
+          fontSize: 11,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          cursor: "none",
+          transition: "opacity 0.2s",
+        }}
+        onMouseEnter={(e) =>
+          ((e.currentTarget as HTMLElement).style.opacity = "0.7")
+        }
+        onMouseLeave={(e) =>
+          ((e.currentTarget as HTMLElement).style.opacity = "0.3")
+        }
+        aria-label="Skip loading animation"
+      >
+        Skip
+      </button>
+    </motion.div>
   );
 }
 

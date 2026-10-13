@@ -45,7 +45,7 @@ export const am = {
   // Map
   mapLabel:           'የጉዞ ክልሎች', /* TODO-REVIEW */
   mapHeadline:        'የት መሄድ ይፈልጋሉ?', /* TODO-REVIEW */
-  mapSub:             'ክልል ይንኩ፣ ምን እንደምናቀርብ ለማየት።', /* TODO-REVIEW */
+  mapSub:             'እያንዳንዱ ምልክት ጉዞ የምናደርግለት ቦታ ነው። ወቅቱንና የሚያስፈልጉትን ቀናት ለማየት ይምረጡ።', /* TODO-REVIEW */
   touchRegion:        'ክልል ይንኩ', /* TODO-REVIEW */
   bestSeason:         'ምርጥ ወቅት', /* TODO-REVIEW */
   gettingThere:       'እንዴት ይደርሳሉ', /* TODO-REVIEW */
@@ -116,7 +116,7 @@ export const am = {
   // Footer
   todayInAddis:       'ዛሬ አዲስ አበባ', /* TODO-REVIEW */
   madeIn:             'በኢትዮጵያ መሪ ባለቤትነት። ከአዲስ አበባ።', /* TODO-REVIEW */
-  credits:            'Map data: geoBoundaries CC-BY 4.0 · ፎቶዎች: Come to Ethiopia Tours', /* TODO-REVIEW */
+  credits:            'የካርታ መረጃ © OpenStreetMap contributors፣ SRTM · tiles © OpenTopoMap · ፎቶዎች: Come to Ethiopia Tours', /* TODO-REVIEW */
 
   // Generic
   close:              'ዝጋ', /* TODO-REVIEW */

@@ -208,7 +208,7 @@ export function Hero({
         </span>
       </motion.div>
 
-      {/* ── Overlay photo: Lalibela cross detail ── */}
+      {/* ── Overlay photo: Lalibela cross detail — hidden on mobile ── */}
       <div
         ref={overlayRef}
         className="hero-photo-overlay"
@@ -221,6 +221,7 @@ export function Hero({
           aspectRatio: "4/5",
           clipPath: "inset(100% 0 0 0)",
           zIndex: 3,
+          display: "var(--hero-overlay-display, block)",
         }}
       >
         {/* Overlay photo: Lalibela church */}
@@ -253,7 +254,7 @@ export function Hero({
             position: "absolute",
             bottom: "clamp(60px, 10vh, 120px)",
             left: "clamp(24px, 7vw, 100px)",
-            right: "clamp(24px, 30vw, 400px)",
+            right: "clamp(24px, 7vw, 80px)",
             zIndex: 4,
           }}
         >

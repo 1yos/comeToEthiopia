@@ -1,10 +1,12 @@
 import { useRef, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { tours, featuredTourIds, type Tour } from "@/data/tours";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { DURATION, EASE_FM, SCROLL } from "@/lib/motion";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -57,6 +59,7 @@ export function PopularTours({
   audience: import("@/sections/AudienceChooser").AudienceMode;
 }) {
   const reduced = useReducedMotion();
+  const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
 
@@ -163,8 +166,9 @@ export function PopularTours({
         aria-label="Tour posters — scroll to see more"
         style={{
           display: "flex",
-          alignItems: "stretch",
-          width: "max-content",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "stretch",
+          width: isMobile ? "100%" : "max-content",
           height: "clamp(420px, 65vh, 640px)",
           paddingLeft: "clamp(24px, 6vw, 80px)",
           paddingBottom: "clamp(40px, 5vh, 64px)",
@@ -181,13 +185,11 @@ export function PopularTours({
           />
         ))}
 
-        {/* End cap: "All tours" link */}
-        <a
-          href="https://cometoethiopiatours.com/tours-holidays-in-ethiopia/"
-          target="_blank"
-          rel="noopener noreferrer"
+        {/* End cap: "All tours" link — internal route */}
+        <Link
+          to="/tours"
           data-cursor-label="All tours"
-          aria-label="View all tours on cometoethiopiatours.com"
+          aria-label="View all tours"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -225,9 +227,9 @@ export function PopularTours({
               opacity: 0.7,
             }}
           >
-            cometoethiopiatours.com
+            See full catalogue
           </div>
-        </a>
+        </Link>
       </div>
 
       {/* Scroll cue for desktop */}

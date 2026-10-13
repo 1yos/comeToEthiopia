@@ -22,7 +22,6 @@ export interface Region {
   accentColor: string;
   imageSlot: string;
   imageDescription: string;
-  mapCoords: { x: number; y: number };
 }
 
 export const regions: Region[] = [
@@ -49,7 +48,6 @@ export const regions: Region[] = [
     imageSlot: "simien-escarpment.webp",
     imageDescription:
       "PHOTO: Simien escarpment at golden hour, dramatic vertical drop to valley, gelada baboons in foreground. Wide landscape, 1600×900.",
-    mapCoords: { x: 28, y: 20 },
   },
   {
     id: "lalibela",
@@ -73,7 +71,6 @@ export const regions: Region[] = [
     imageSlot: "lalibela-beta-giyorgis.webp",
     imageDescription:
       "PHOTO: Beta Giyorgis church from above at dawn, cross-shaped roof in red volcanic rock. Overhead angle, 1200×1200.",
-    mapCoords: { x: 35, y: 35 },
   },
   {
     id: "addis",
@@ -97,7 +94,6 @@ export const regions: Region[] = [
     imageSlot: "addis-merkato-morning.webp",
     imageDescription:
       "PHOTO: Addis Ababa Merkato at 7am, morning light through fabric stalls. Street level, 1600×900.",
-    mapCoords: { x: 32, y: 52 },
   },
   {
     id: "omo",
@@ -123,7 +119,6 @@ export const regions: Region[] = [
     imageSlot: "omo-valley-hamar.webp",
     imageDescription:
       "PHOTO: Omo Valley, Hamar woman at Dimeka market, ochre-butter braids, dry acacia. Environmental portrait, 900×1200.",
-    mapCoords: { x: 27, y: 72 },
   },
   {
     id: "danakil",
@@ -148,7 +143,6 @@ export const regions: Region[] = [
     imageSlot: "danakil-dallol-acid.webp",
     imageDescription:
       "PHOTO: Dallol hydrothermal field, acid-yellow and green salt formations, flat horizon. Ultra-wide, 2000×900.",
-    mapCoords: { x: 60, y: 22 },
   },
 ];
 

@@ -35,14 +35,25 @@ Used with the owner's permission. Original files are 750px wide (company thumbna
 
 ---
 
-## Map boundary data
+## Map tiles and boundary data
 
-| Source                      | License                           | Used in             |
-| --------------------------- | --------------------------------- | ------------------- |
-| geoBoundaries ETH ADM0/ADM1 | CC-BY 4.0 — Runfola et al. (2020) | Interactive SVG map |
+| Source                                   | License                        | Used in                       |
+| ---------------------------------------- | ------------------------------ | ----------------------------- |
+| OpenStreetMap contributors                | ODbL 1.0                       | Base map data (all tiles)     |
+| OpenTopoMap (`tile.opentopomap.org`)      | CC-BY-SA 3.0                   | Base map ("Terrain")          |
+| SRTM elevation data                       | Public domain (NASA/USGS)      | Rendered inside OpenTopoMap   |
 
-Citation: Runfola D et al. (2020) geoBoundaries: A global database of political administrative
-boundaries. PLoS ONE 15(4): e0231866. https://doi.org/10.1371/journal.pone.0231866
+The previous "Paper" base map (CARTO Positron, `basemaps.cartocdn.com`) was
+removed along with the base-map switcher — the site now ships terrain tiles
+only.
+
+Attribution is rendered by Leaflet's own attribution control in the bottom-right
+corner of the map (`attributionControl: true` in `src/sections/Map.tsx`). It must
+never be disabled — the ODbL and CC-BY licences above require it.
+
+The previous hand-drawn SVG map used geoBoundaries ETH ADM0/ADM1 (CC-BY 4.0,
+Runfola et al. 2020). It has been removed; `scripts/build-map.ts` and
+`src/data/ethiopiaMap.ts` are deleted along with the `d3-geo` dependency.
 
 ---
 
@@ -75,4 +86,7 @@ as stand-ins. Replace when originals are available:
 
 ## Footer attribution (shown on the live site)
 
-> "Map data: geoBoundaries CC-BY 4.0 · Photos: Come to Ethiopia Tours"
+> "Map data © OpenStreetMap contributors, SRTM · tiles © OpenTopoMap · Photos: Come to Ethiopia Tours"
+
+The string lives in `src/data/content.ts` under `map.credits` and is read by
+`src/sections/Footer.tsx`. Do not hard-code it in a component.

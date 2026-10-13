@@ -108,9 +108,16 @@ export const siteContent = {
   map: {
     sectionLabel: "Tour regions",
     headline: "Where do you want to go?",
-    subline: "Tap a region to see what we run there.",
+    subline:
+      "Every pin is a place we actually run tours to. Pick one to see the season, the drive and how many days it needs.",
     geezDecorator: "ካርታ" /* TODO-REVIEW */,
-    defaultPrompt: "Touch a region",
+    defaultPrompt: "Select a destination",
+    /** Shown if the tile CDN cannot be reached — the list still works. */
+    tilesError:
+      "Map tiles could not load. The destination list on the left is fully usable — or contact us on WhatsApp and we will send a printed route.",
+    /** Attribution line for the footer and credits page. */
+    credits:
+      "Map data © OpenStreetMap contributors, SRTM · tiles © OpenTopoMap · Photos: Come to Ethiopia Tours",
   },
 
   // ── When to go ───────────────────────────────────────────────────────────
@@ -364,8 +371,19 @@ export const siteContent = {
       { label: "Email", href: "mailto:cometoethiopiatours@gmail.com" },
     ],
     creditsNote:
-      "Map data: geoBoundaries CC-BY 4.0 · Photos: Wikimedia Commons (CC BY-SA)",
+      "Map data © OpenStreetMap contributors, SRTM · tiles © OpenTopoMap · Photos: Come to Ethiopia Tours",
     easterEggHint: "",
+  },
+
+  // ── 404 page ──────────────────────────────────────────────────────────────
+  notFound: {
+    label: "404",
+    title: "Page not found",
+    headline: "Nothing here.",
+    subline:
+      "The page you are looking for has moved, or never existed. Try the tours or head home.",
+    homeLabel: "← Home",
+    toursLabel: "Browse tours",
   },
 };
 
