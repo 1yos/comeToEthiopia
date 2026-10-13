@@ -34,6 +34,9 @@ export function Nav({
     { label: t.tours, href: "/tours" },
     { label: t.destinations, href: "/destinations" },
     { label: t.whenToGo, href: "/when-to-go" },
+    { label: t.culture, href: "/culture" },
+    { label: t.travelerInfo, href: "/traveler-info" },
+    { label: t.about, href: "/about" },
     { label: t.planTrip, href: "/plan" },
   ];
 
