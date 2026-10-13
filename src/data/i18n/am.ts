@@ -9,7 +9,7 @@ export const am = {
   destinations: "መዳረሻዎች" /* TODO-REVIEW */,
   whenToGo: "መቼ ይሂዱ" /* TODO-REVIEW */,
   culture: "ባህልና ቋንቋ" /* TODO-REVIEW */,
-  travelerInfo: "ከመብረርዎ በፊት" /* TODO-REVIEW */,
+  gallery: "ፎቶ ማህደር" /* TODO-REVIEW */,
   about: "ስለ እኛ" /* TODO-REVIEW */,
   planTrip: "ጉዞ ያቅዱ" /* TODO-REVIEW */,
   visiting: "ጎብኚ" /* TODO-REVIEW */,

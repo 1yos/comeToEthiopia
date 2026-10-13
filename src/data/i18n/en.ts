@@ -9,7 +9,7 @@ export const en = {
   destinations: "Destinations",
   whenToGo: "When to Go",
   culture: "Culture",
-  travelerInfo: "Before You Fly",
+  gallery: "Gallery",
   about: "About",
   planTrip: "Plan Trip",
   visiting: "Visiting",

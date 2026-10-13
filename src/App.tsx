@@ -18,10 +18,10 @@ import { ToursPage } from "@/pages/ToursPage";
 import { TourDetailPage } from "@/pages/TourDetailPage";
 import { DestinationsPage } from "@/pages/DestinationsPage";
 import { WhenToGoPage } from "@/pages/WhenToGoPage";
-import { TravelerInfoPage } from "@/pages/TravelerInfoPage";
 import { PlanPage } from "@/pages/PlanPage";
 import { AboutPage } from "@/pages/AboutPage";
 import { CulturePage } from "@/pages/CulturePage";
+import { GalleryPage } from "@/pages/GalleryPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
 import type { AudienceMode } from "@/sections/AudienceChooser";
@@ -148,20 +148,17 @@ export default function App() {
             {/* When to go */}
             <Route path="/when-to-go" element={<WhenToGoPage />} />
 
-            {/* Traveler info */}
-            <Route
-              path="/traveler-info"
-              element={<TravelerInfoPage audience={audience} />}
-            />
+            {/* Gallery */}
+            <Route path="/gallery" element={<GalleryPage />} />
+
+            {/* Culture & language */}
+            <Route path="/culture" element={<CulturePage />} />
 
             {/* Plan your trip */}
             <Route path="/plan" element={<PlanPage audience={audience} />} />
 
             {/* About */}
             <Route path="/about" element={<AboutPage />} />
-
-            {/* Culture & language */}
-            <Route path="/culture" element={<CulturePage />} />
 
             {/* 404 */}
             <Route path="*" element={<NotFoundPage />} />
