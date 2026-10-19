@@ -108,8 +108,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/addis-ababa-surroundings-tours/half-day-addis-ababa-food-culture-tour/",
-    imageSlot:
-      "Half-Day-Addis-Ababa-Tour-to-National-Museum-Trinity-Cathedral-Merkato.webp",
+    imageSlot: "Addis-Ababa-Coffee-Ceremony-Ethiopia-Tours-480.jpg",
     imageAlt:
       "Traditional Ethiopian coffee ceremony, clay pot on charcoal, Addis Ababa",
   },
@@ -193,8 +192,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/addis-ababa-surroundings-tours/day-trip-from-addis-ababa-to-menagesha-suba-forest/",
-    imageSlot:
-      "Half-Day-Addis-Ababa-Tour-to-National-Museum-Trinity-Cathedral-Merkato.webp",
+    imageSlot: "Addis-Ababa-Coffee-Ceremony-Ethiopia-Tours-480.jpg",
     imageAlt:
       "Menagesha Suba Forest, indigenous juniper trees, forest understory, Ethiopia",
   },
@@ -228,7 +226,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/addis-ababa-surroundings-tours/day-trip-to-debre-libanos-monasteries-portuguese-bridge/",
-    imageSlot: "Day-Trip-to-Wenchi-Crater-Lake.webp",
+    imageSlot: "Debre-Libanos-Monastery-Ethiopia-Tours-480.jpg",
     imageAlt:
       "Debre Libanos monastery cliff face and Jemma River Gorge, Ethiopia",
   },
@@ -264,8 +262,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/addis-ababa-surroundings-tours/day-trip-to-adadi-mariam-monolithic-church-melka-kunture-tiya-stelae/",
-    imageSlot:
-      "Half-Day-Addis-Ababa-Tour-to-National-Museum-Trinity-Cathedral-Merkato.webp",
+    imageSlot: "Tiya-Stelae-UNESCO-Ethiopia-Tours-480.jpg",
     imageAlt: "Tiya UNESCO stelae field, carved standing stones, Ethiopia",
   },
   {
@@ -297,8 +294,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/addis-ababa-surroundings-tours/day-trip-to-debre-berhan-ankober/",
-    imageSlot:
-      "Half-Day-Addis-Ababa-Tour-to-National-Museum-Trinity-Cathedral-Merkato.webp",
+    imageSlot: "Blue-Nile-Gorge-Portuguese-Bridge-Ethiopia-Tours-480.jpg",
     imageAlt: "Ankober mountain capital ruins and Rift Valley view, Ethiopia",
   },
 
@@ -351,7 +347,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/3-day-rift-valley-tour-lake-ziway-abiyata-shalla-hawassa/",
-    imageSlot: "Day-Trip-to-Wenchi-Crater-Lake.webp",
+    imageSlot: "Lake-Ziway-Birds-Ethiopia-Rift-Valley-Tours-480.jpg",
     imageAlt: "Lake Hawassa pelicans at the morning fish market, Ethiopia",
   },
 
@@ -532,8 +528,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/10-day-historic-tour-to-northern-central-ethiopia/",
-    imageSlot:
-      "7-Day-Historic-Tour-to-Lake-Tana-Gonder-Lalibela-Simien-Mountains.webp",
+    imageSlot: "Debre-Libanos-Monastery-Ethiopia-Tours-480.jpg",
     imageAlt:
       "Gondar Royal Enclosure 17th-century castle complex, northern Ethiopia",
   },
@@ -1107,7 +1102,7 @@ export const tours: Tour[] = [
     difficulty: "demanding",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/southern-cultural-ethiopia-tours/5-day-bale-mountains-trek-ethiopian-wolves-alpine-lakes/",
-    imageSlot: "5-Day-Bale-Mountains-Trek-Ethiopian-Wolves-Alpine-Lakes.webp",
+    imageSlot: "Ethiopian-Wolf-Bale-Mountains-Sanetti-Plateau-480.jpg",
     imageAlt:
       "Bale Mountains trek, Sanetti Plateau, Ethiopian wolf in alpine meadow",
   },
@@ -1173,7 +1168,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/eastern-ethiopia-tours/4-day-east-ethiopia-adventure-to-awash-national-park-harar-walled-city/",
-    imageSlot: "4-Day-Bale-Mountains-Sof-Omar-Caves-Tours.webp",
+    imageSlot: "Harar-Walled-City-Ethiopia-Tours-480.jpg",
     imageAlt: "Harar old walled city gate, evening light, eastern Ethiopia",
   },
   {
@@ -1233,7 +1228,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/eastern-ethiopia-tours/3-day-harar-cultural-discovery/",
-    imageSlot: "4-Day-Bale-Mountains-Sof-Omar-Caves-Tours.webp",
+    imageSlot: "Harar-City-Wall-Historic-Ethiopia-Tours-480.jpg",
     imageAlt: "Harar old city walls and gate at dusk, eastern Ethiopia",
   },
 
@@ -1365,7 +1360,7 @@ export const tours: Tour[] = [
     difficulty: "moderate",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/southern-cultural-ethiopia-tours/7-day-omo-valley-tribal-and-cultural-tour/",
-    imageSlot: "3-Day-Omo-Valley-Quick-Tour-to-Mursi-Hamer-Karo-Tribes.webp",
+    imageSlot: "Konso-Stone-Terraces-Ethiopia-Tours-480.jpg",
     imageAlt: "Omo Valley Hamer tribe, traditional dress, southern Ethiopia",
   },
 
@@ -1530,7 +1525,7 @@ export const tours: Tour[] = [
     difficulty: "moderate",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/all-in-one-tours-of-ethiopia/8-day-combined-tour-of-arba-minch-omo-tribes-lalibela-churches/",
-    imageSlot: "3-Day-Omo-Valley-Quick-Tour-to-Mursi-Hamer-Karo-Tribes.webp",
+    imageSlot: "Dorze-Bamboo-Village-Arba-Minch-Ethiopia-Tours-480.jpg",
     imageAlt:
       "Lalibela rock-hewn churches combined with Omo Valley tribes tour",
   },
@@ -1628,7 +1623,7 @@ export const tours: Tour[] = [
     difficulty: "moderate",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/all-in-one-tours-of-ethiopia/10-day-western-and-southern-ethiopia-tour/",
-    imageSlot: "3-Day-Omo-Valley-Quick-Tour-to-Mursi-Hamer-Karo-Tribes.webp",
+    imageSlot: "Rift-Valley-Lake-Hawassa-Ethiopia-Tours-480.jpg",
     imageAlt: "Kaffa coffee biosphere, wild coffee forest, western Ethiopia",
   },
 
@@ -1713,7 +1708,7 @@ export const tours: Tour[] = [
     difficulty: "moderate",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/western-ethiopia-tours/7-day-western-ethiopia-kaffa-coffee-biosphere-tours/",
-    imageSlot: "Day-Trip-to-Wenchi-Crater-Lake.webp",
+    imageSlot: "Sof-Omar-Cave-Underground-River-Ethiopia-Tours-480.jpg",
     imageAlt: "Kaffa coffee biosphere, ancient coffee forest, western Ethiopia",
   },
   {
@@ -1779,7 +1774,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/southern-cultural-ethiopia-tours/4-day-south-ethiopia-coffee-tour-to-yirgalem-hawassa-yirgacheffe/",
-    imageSlot: "Day-Trip-to-Wenchi-Crater-Lake.webp",
+    imageSlot: "Lake-Hawassa-Fish-Market-Ethiopia-Tours-480.jpg",
     imageAlt:
       "Yirgacheffe coffee plantation, southern Ethiopia, coffee cherries on branch",
   },
