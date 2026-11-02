@@ -47,10 +47,11 @@ body {
   cursor: none;
 }
 
-/* Show default cursor for touch devices */
+/* Show default cursor for touch devices — override inline cursor:none too */
 @media (hover: none) and (pointer: coarse) {
-  body {
-    cursor: auto;
+  body,
+  *[style] {
+    cursor: auto !important;
   }
 }
 

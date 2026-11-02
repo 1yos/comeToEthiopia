@@ -234,6 +234,32 @@ export function WhyUs() {
               </svg>
             </a>
           </div>
+
+          {/* Google rating */}
+          <div
+            style={{
+              padding: "16px 24px",
+              marginTop: "clamp(24px, 4vh, 40px)",
+              backgroundColor: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 0,
+            }}
+            aria-label="Google rating for cometoethiopia"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+              style={{ marginRight: 8 }}
+            >
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.27l-7.19 2.19L12 17z" />
+              <path d="M12 4.2l5.3 13.36L12 21l5.3-13.36L12 4.2z" />
+              <path d="L4 9.27L4 4.2l5.3-13.36L12 4.2l5.3 13.36L12 9.27l-8 2.19L4 14.73z" />
+            </svg>
+            <span style={{ fontSize: 14, color: "#FFC107" }}>4.8</span>
+          </div>
         </div>
       </div>
     </section>

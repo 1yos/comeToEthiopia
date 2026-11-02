@@ -1,0 +1,593 @@
+/*
+ * Admin panel styles.
+ * Uses the same CSS variables as the main site.
+ * Completely separate visual identity — dark sidebar, clean forms.
+ * Never bleeds into the public site.
+ */
+
+/* ── Reset for admin scope ─────────────────────────────────────────────── */
+.cte-admin *,
+.cte-admin *::before,
+.cte-admin *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.cte-admin {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  background-color: #f7f6f3;
+  min-height: 100vh;
+  cursor: auto; /* Admin uses normal cursor */
+}
+
+.cte-admin * {
+  cursor: auto;
+}
+
+.cte-admin button,
+.cte-admin a,
+.cte-admin [role="button"] {
+  cursor: pointer;
+}
+
+/* ── Layout ────────────────────────────────────────────────────────────── */
+.admin-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 56px 1fr;
+  min-height: 100vh;
+}
+
+.admin-topbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  background-color: var(--ink);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.admin-sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  background-color: var(--indigo);
+  min-height: calc(100vh - 56px);
+  position: sticky;
+  top: 56px;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-main {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 32px;
+  overflow-y: auto;
+}
+
+/* ── Topbar ────────────────────────────────────────────────────────────── */
+.admin-topbar__logo {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--paper);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.admin-topbar__badge {
+  font-family: var(--font-body);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ochre);
+  background-color: rgba(184, 116, 42, 0.15);
+  padding: 3px 8px;
+}
+
+.admin-topbar__spacer {
+  flex: 1;
+}
+
+.admin-topbar__btn {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: none;
+  border: 1px solid rgba(241, 234, 217, 0.2);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.admin-topbar__btn:hover {
+  border-color: var(--ochre);
+  color: var(--ochre);
+}
+
+/* ── Sidebar nav ───────────────────────────────────────────────────────── */
+.admin-nav {
+  list-style: none;
+  padding: 20px 0;
+  flex: 1;
+}
+
+.admin-nav__item a,
+.admin-nav__item button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 20px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: rgba(241, 234, 217, 0.6);
+  text-decoration: none;
+  background: none;
+  border: none;
+  text-align: left;
+  transition: color 0.2s, background-color 0.2s;
+  border-left: 2px solid transparent;
+}
+
+.admin-nav__item a:hover,
+.admin-nav__item button:hover {
+  color: var(--paper);
+  background-color: rgba(241, 234, 217, 0.06);
+}
+
+.admin-nav__item--active a,
+.admin-nav__item--active button {
+  color: var(--paper);
+  border-left-color: var(--ochre);
+  background-color: rgba(241, 234, 217, 0.08);
+}
+
+.admin-nav__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.admin-nav__section {
+  font-family: var(--font-body);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(241, 234, 217, 0.25);
+  padding: 16px 20px 6px;
+}
+
+/* ── Page header ───────────────────────────────────────────────────────── */
+.admin-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-page-title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-variation-settings: "opsz" 32, "wght" 600;
+  color: var(--ink);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.admin-page-sub {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  opacity: 0.5;
+  margin-top: 4px;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.admin-btn {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 10px 22px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.admin-btn--primary {
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+.admin-btn--primary:hover {
+  background-color: var(--ochre);
+}
+
+.admin-btn--secondary {
+  background-color: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(18, 17, 16, 0.2);
+}
+
+.admin-btn--secondary:hover {
+  border-color: var(--ink);
+}
+
+.admin-btn--danger {
+  background-color: transparent;
+  color: #c0392b;
+  border: 1px solid rgba(192, 57, 43, 0.3);
+}
+
+.admin-btn--danger:hover {
+  background-color: #c0392b;
+  color: white;
+}
+
+.admin-btn--sm {
+  padding: 6px 14px;
+  font-size: 10px;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+.admin-card {
+  background-color: white;
+  border: 1px solid rgba(18, 17, 16, 0.08);
+  padding: 24px;
+}
+
+.admin-card__title {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.45;
+  margin-bottom: 12px;
+}
+
+/* ── Form elements ─────────────────────────────────────────────────────── */
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.admin-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.55;
+}
+
+.admin-input,
+.admin-textarea,
+.admin-select {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  background-color: white;
+  border: 1px solid rgba(18, 17, 16, 0.2);
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  border-radius: 0;
+}
+
+.admin-input:focus,
+.admin-textarea:focus,
+.admin-select:focus {
+  border-color: var(--ochre);
+}
+
+.admin-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+}
+
+.admin-input-hint {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--ink);
+  opacity: 0.38;
+  font-style: italic;
+}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  font-family: var(--font-body);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.4;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(18, 17, 16, 0.08);
+  background-color: rgba(18, 17, 16, 0.02);
+}
+
+.admin-table td {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  padding: 12px;
+  border-bottom: 1px solid rgba(18, 17, 16, 0.06);
+  vertical-align: middle;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tr:hover td {
+  background-color: rgba(18, 17, 16, 0.02);
+}
+
+/* ── Stat cards (dashboard) ────────────────────────────────────────────── */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.admin-stat {
+  background-color: white;
+  border: 1px solid rgba(18, 17, 16, 0.08);
+  padding: 20px;
+}
+
+.admin-stat__number {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-variation-settings: "opsz" 48, "wght" 700;
+  color: var(--ink);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.admin-stat__label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.45;
+}
+
+.admin-stat__accent {
+  width: 24px;
+  height: 2px;
+  background-color: var(--ochre);
+  margin-bottom: 10px;
+}
+
+/* ── Badge ─────────────────────────────────────────────────────────────── */
+.admin-badge {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+}
+
+.admin-badge--easy { background-color: rgba(63, 91, 58, 0.12); color: var(--highland); }
+.admin-badge--moderate { background-color: rgba(184, 116, 42, 0.12); color: var(--ochre); }
+.admin-badge--demanding { background-color: rgba(227, 181, 5, 0.12); color: #8a6d00; }
+
+/* ── Alert / toast ─────────────────────────────────────────────────────── */
+.admin-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: var(--ink);
+  color: var(--paper);
+  padding: 12px 20px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 9999;
+  max-width: 360px;
+  animation: toastIn 0.25s ease;
+}
+
+.admin-toast--success { border-left: 3px solid var(--highland); }
+.admin-toast--error   { border-left: 3px solid #c0392b; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────── */
+.admin-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--ink);
+  opacity: 0.35;
+}
+
+.admin-empty__icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.admin-empty__text {
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+/* ── Modal ─────────────────────────────────────────────────────────────── */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(18, 17, 16, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.admin-modal {
+  background-color: white;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(18, 17, 16, 0.08);
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.admin-modal__title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-variation-settings: "opsz" 24, "wght" 600;
+  color: var(--ink);
+}
+
+.admin-modal__close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--ink);
+  opacity: 0.4;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: opacity 0.2s;
+}
+
+.admin-modal__close:hover { opacity: 1; }
+
+.admin-modal__body {
+  padding: 24px;
+  flex: 1;
+}
+
+.admin-modal__footer {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(18, 17, 16, 0.08);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ── Login page ────────────────────────────────────────────────────────── */
+.admin-login {
+  min-height: 100vh;
+  background-color: var(--indigo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-login__card {
+  background-color: var(--paper);
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  position: relative;
+  z-index: 1;
+}
+
+.admin-login__logo {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-style: italic;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.admin-login__subtitle {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ochre);
+  margin-bottom: 32px;
+}
+
+.admin-login__error {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: #c0392b;
+  padding: 10px 12px;
+  background-color: rgba(192, 57, 43, 0.08);
+  border-left: 2px solid #c0392b;
+  margin-bottom: 16px;
+}
+
+/* ── Image thumbnail ───────────────────────────────────────────────────── */
+.admin-thumb {
+  width: 56px;
+  height: 40px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* ── Drag handle ───────────────────────────────────────────────────────── */
+.admin-drag-handle {
+  color: var(--ink);
+  opacity: 0.3;
+  cursor: grab;
+  padding: 4px;
+  user-select: none;
+}
+
+.admin-drag-handle:active {
+  cursor: grabbing;
+}

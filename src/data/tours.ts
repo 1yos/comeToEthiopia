@@ -192,9 +192,9 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/addis-ababa-surroundings-tours/day-trip-from-addis-ababa-to-menagesha-suba-forest/",
-    imageSlot: "Addis-Ababa-Coffee-Ceremony-Ethiopia-Tours-480.jpg",
+    imageSlot: "Ethiopian-Wolf-Bale-Mountains-Sanetti-Plateau-480.jpg",
     imageAlt:
-      "Menagesha Suba Forest, indigenous juniper trees, forest understory, Ethiopia",
+      "Menagesha Suba Forest, ancient junipers and endemic birds, Ethiopia",
   },
   {
     id: "debre-libanos-day-trip",
@@ -528,7 +528,7 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/10-day-historic-tour-to-northern-central-ethiopia/",
-    imageSlot: "Debre-Libanos-Monastery-Ethiopia-Tours-480.jpg",
+    imageSlot: "7-Day-Historic-Tour-to-Lake-Tana-Gonder-Lalibela-Simien-Mountains-480.webp",
     imageAlt:
       "Gondar Royal Enclosure 17th-century castle complex, northern Ethiopia",
   },
@@ -657,10 +657,9 @@ export const tours: Tour[] = [
     difficulty: "demanding",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/northern-ethiopia-historical-tours/15-day-northern-ethiopia-danakil-depression-tour/",
-    imageSlot:
-      "3-Day-Expedition-to-Dallol-Salt-Flats-Danakil-Depression-Erta-Ale-Volcano.webp",
+    imageSlot: "Lalibela-Ethiopia-Tours-480.webp",
     imageAlt:
-      "Dallol hydrothermal field at dawn, acid formations, Danakil Depression Ethiopia",
+      "Lalibela rock-hewn churches, carved in red tuff — gateway to the north",
   },
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1102,7 +1101,7 @@ export const tours: Tour[] = [
     difficulty: "demanding",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/southern-cultural-ethiopia-tours/5-day-bale-mountains-trek-ethiopian-wolves-alpine-lakes/",
-    imageSlot: "Ethiopian-Wolf-Bale-Mountains-Sanetti-Plateau-480.jpg",
+    imageSlot: "5-Day-Bale-Mountains-Trek-Ethiopian-Wolves-Alpine-Lakes-480.webp",
     imageAlt:
       "Bale Mountains trek, Sanetti Plateau, Ethiopian wolf in alpine meadow",
   },
@@ -1168,8 +1167,8 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/eastern-ethiopia-tours/4-day-east-ethiopia-adventure-to-awash-national-park-harar-walled-city/",
-    imageSlot: "Harar-Walled-City-Ethiopia-Tours-480.jpg",
-    imageAlt: "Harar old walled city gate, evening light, eastern Ethiopia",
+    imageSlot: "Awash-National-Park-Oryx-Ethiopia-Tours-480.jpg",
+    imageAlt: "Awash National Park, Beisa oryx at dawn, eastern Ethiopia",
   },
   {
     id: "harar-3day",
@@ -1228,8 +1227,8 @@ export const tours: Tour[] = [
     difficulty: "easy",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/eastern-ethiopia-tours/3-day-harar-cultural-discovery/",
-    imageSlot: "Harar-City-Wall-Historic-Ethiopia-Tours-480.jpg",
-    imageAlt: "Harar old city walls and gate at dusk, eastern Ethiopia",
+    imageSlot: "Harar-Walled-City-Ethiopia-Tours-480.jpg",
+    imageAlt: "Harar old walled city gate, evening light, eastern Ethiopia",
   },
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1441,8 +1440,7 @@ export const tours: Tour[] = [
     difficulty: "demanding",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/all-in-one-tours-of-ethiopia/7-day-ethiopia-tour-to-omo-valley-tribes-danakil-depression/",
-    imageSlot:
-      "3-Day-Expedition-to-Dallol-Salt-Flats-Danakil-Depression-Erta-Ale-Volcano.webp",
+    imageSlot: "Ethiopian-Wolf-Canis-Simensis-Bale-480.jpg",
     imageAlt: "Erta Ale volcano lava lake at night, Afar region, Ethiopia",
   },
   {
@@ -1624,7 +1622,7 @@ export const tours: Tour[] = [
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/all-in-one-tours-of-ethiopia/10-day-western-and-southern-ethiopia-tour/",
     imageSlot: "Rift-Valley-Lake-Hawassa-Ethiopia-Tours-480.jpg",
-    imageAlt: "Kaffa coffee biosphere, wild coffee forest, western Ethiopia",
+    imageAlt: "Rift Valley lakes, flamingos and pelicans, southern Ethiopia",
   },
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1708,7 +1706,7 @@ export const tours: Tour[] = [
     difficulty: "moderate",
     liveUrl:
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/western-ethiopia-tours/7-day-western-ethiopia-kaffa-coffee-biosphere-tours/",
-    imageSlot: "Sof-Omar-Cave-Underground-River-Ethiopia-Tours-480.jpg",
+    imageSlot: "Sof-Omar-Cave-Ethiopia-Tours-480.jpg",
     imageAlt: "Kaffa coffee biosphere, ancient coffee forest, western Ethiopia",
   },
   {
@@ -1776,7 +1774,7 @@ export const tours: Tour[] = [
       "https://cometoethiopiatours.com/tours-holidays-in-ethiopia/southern-cultural-ethiopia-tours/4-day-south-ethiopia-coffee-tour-to-yirgalem-hawassa-yirgacheffe/",
     imageSlot: "Lake-Hawassa-Fish-Market-Ethiopia-Tours-480.jpg",
     imageAlt:
-      "Yirgacheffe coffee plantation, southern Ethiopia, coffee cherries on branch",
+      "Yirgacheffe coffee tour, Lake Hawassa at golden hour, southern Ethiopia",
   },
 ];
 

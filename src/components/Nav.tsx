@@ -235,6 +235,7 @@ export function Nav({
             border: "none",
             cursor: "none",
             padding: 8,
+            display: "flex",
             flexDirection: "column",
             gap: 5,
           }}

@@ -63,10 +63,10 @@ const ALL_IMAGES: GalleryImage[] = [
     category: "landscape",
   },
   {
-    src: "/media/tours/4-Day-Simien-Mountains-Hiking-Tour-480.webp",
-    alt: "Simien Mountains hiking, gelada baboons in foreground",
-    caption: "Simien Mountains trek",
-    region: "Gelada baboon territory",
+    src: "/media/tours/Ethiopian-Wolf-Canis-Simensis-Bale-480.jpg",
+    alt: "Ethiopian wolf portrait, Bale Mountains National Park, rare canid",
+    caption: "Ethiopian wolf",
+    region: "Bale Mountains · ~500 in the wild",
     category: "landscape",
   },
   {
@@ -105,26 +105,20 @@ const ALL_IMAGES: GalleryImage[] = [
     category: "landscape",
   },
   {
-    src: "/media/tours/Day-Trip-to-Wenchi-Crater-Lake-480.webp",
-    alt: "Wenchi Crater Lake, volcanic crater at 2,600m, Ethiopia",
-    caption: "Wenchi Crater Lake",
-    region: "2,600m · West of Addis",
+    src: "/media/tours/Harar-City-Wall-Historic-Ethiopia-Tours-480.jpg",
+    alt: "Harar Jugol city wall at dusk, UNESCO walled city, eastern Ethiopia",
+    caption: "Harar — Jugol wall",
+    region: "16th century · 3.5km of wall",
     category: "landscape",
   },
   {
-    src: "/media/tours/Gheralta-Mountains-Ethiopia-Tours-and-Travel-Packages-480.webp",
-    alt: "Gheralta sandstone cliffs, Tigray region, northern Ethiopia",
-    caption: "Gheralta cliffs",
-    region: "Tigray · Rock-hewn churches",
+    src: "/media/tours/Sof-Omar-Cave-Ethiopia-Tours-480.jpg",
+    alt: "Sof Omar cave chambers, Weyib River carved limestone, Bale region",
+    caption: "Sof Omar cave",
+    region: "Largest cave in Africa · Bale",
     category: "landscape",
   },
-  {
-    src: "/media/regions/Dalol-Danakil-Depression-Ethiopia-Tours-and-Holiday-Packages-480.webp",
-    alt: "Dalol hydrothermal field, Danakil Depression",
-    caption: "Dalol salt formations",
-    region: "Danakil · Afar Region",
-    category: "landscape",
-  },
+
   {
     src: "/media/tours/Debre-Libanos-Monastery-Ethiopia-Tours-480.jpg",
     alt: "Debre Libanos monastery, 13th century, north of Addis Ababa",
@@ -160,13 +154,7 @@ const ALL_IMAGES: GalleryImage[] = [
     region: "Ancient capital · 3,000 years",
     category: "landscape",
   },
-  {
-    src: "/media/tours/7-Day-Historic-Tour-to-Lake-Tana-Gonder-Lalibela-Simien-Mountains-480.webp",
-    alt: "Lake Tana island monastery boat trip, Ethiopia",
-    caption: "Lake Tana",
-    region: "Island monasteries · Bahir Dar",
-    category: "landscape",
-  },
+
   {
     src: "/media/tours/Lake-Ziway-Birds-Ethiopia-Rift-Valley-Tours-480.jpg",
     alt: "Egyptian goose at Lake Ziway, Ethiopian Rift Valley",
@@ -189,13 +177,7 @@ const ALL_IMAGES: GalleryImage[] = [
     region: "Southern Ethiopia",
     category: "culture",
   },
-  {
-    src: "/media/tours/3-Day-Omo-Valley-Quick-Tour-to-Mursi-Hamer-Karo-Tribes-480.webp",
-    alt: "Omo Valley, Hamer woman at Key Afer market, ochre-butter braids",
-    caption: "Hamer people",
-    region: "Key Afer market · Thursday",
-    category: "culture",
-  },
+
   {
     src: "/media/tours/Konso-Stone-Terraces-Ethiopia-Tours-480.jpg",
     alt: "Konso stone terraces and fortified village, UNESCO World Heritage, southern Ethiopia",

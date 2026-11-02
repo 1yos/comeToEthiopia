@@ -5,6 +5,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DURATION } from "@/lib/motion";
 
 import "@/styles/globals.css";
+import "@/admin/styles/admin.css";
 
 import { Cursor } from "@/components/Cursor";
 import { GrainOverlay } from "@/components/GrainOverlay";
@@ -23,6 +24,20 @@ import { AboutPage } from "@/pages/AboutPage";
 import { CulturePage } from "@/pages/CulturePage";
 import { GalleryPage } from "@/pages/GalleryPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+
+// Admin panel
+import {
+  LoginPage,
+  DashboardPage,
+  ToursAdminPage,
+  TourEditPage,
+  DestinationsAdminPage,
+  GalleryAdminPage,
+  ContentAdminPage,
+  ReviewsAdminPage,
+  ContactAdminPage,
+  AdminLayout,
+} from "@/admin/index";
 
 import type { AudienceMode } from "@/sections/AudienceChooser";
 
@@ -163,6 +178,73 @@ export default function App() {
             {/* 404 */}
             <Route path="*" element={<NotFoundPage />} />
           </Route>
+
+          {/* ── Admin panel — outside the public Layout ── */}
+          <Route path="/admin/login" element={<LoginPage />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminLayout>
+                <DashboardPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/tours"
+            element={
+              <AdminLayout>
+                <ToursAdminPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/tours/:id"
+            element={
+              <AdminLayout>
+                <TourEditPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/destinations"
+            element={
+              <AdminLayout>
+                <DestinationsAdminPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/gallery"
+            element={
+              <AdminLayout>
+                <GalleryAdminPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/content"
+            element={
+              <AdminLayout>
+                <ContentAdminPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/reviews"
+            element={
+              <AdminLayout>
+                <ReviewsAdminPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/contact"
+            element={
+              <AdminLayout>
+                <ContactAdminPage />
+              </AdminLayout>
+            }
+          />
         </Routes>
       </motion.div>
     </>

@@ -8,7 +8,7 @@ import { PopularTours } from "@/sections/PopularTours";
 import { ScrollStory } from "@/sections/ScrollStory";
 import { Map } from "@/sections/Map";
 import { WhenToGo } from "@/sections/WhenToGo";
-import { WhyUs } from "@/sections/WhyUs";
+import { GoogleReviews } from "@/sections/GoogleReviews";
 import { TravelerInfo } from "@/sections/TravelerInfo";
 
 interface HomePageProps {
@@ -36,7 +36,7 @@ export function HomePage({
       <ScrollStory />
       <Map />
       <WhenToGo />
-      <WhyUs />
+      <GoogleReviews />
       <TravelerInfo audience={audience} />
     </>
   );

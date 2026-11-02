@@ -1,10 +1,11 @@
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { tours } from "@/data/tours";
 import { useSeo } from "@/hooks/useSeo";
 import { siteContent } from "@/data/content";
 import { DURATION, EASE_FM } from "@/lib/motion";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { NotFoundPage } from "@/pages/NotFoundPage";
 
 export function TourDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -13,10 +14,10 @@ export function TourDetailPage() {
   const isMobile = useIsMobile();
   const tour = tours.find((t) => (t.slug ?? t.id) === slug);
 
-  // Unknown slug → 404
-  if (!tour) return <Navigate to="/tours" replace />;
+  // Unknown slug → proper 404
+  if (!tour) return <NotFoundPage />;
 
-  const imgSrc = `/media/tours/${tour.imageSlot.replace(/\.[^.]+$/, "")}-480.webp`;
+  const imgSrc = `/media/tours/${tour.imageSlot}`;
 
   const difficultyLabel = {
     easy: "Easy — suitable for all fitness levels",
@@ -231,7 +232,7 @@ export function TourDetailPage() {
                 style={{ flex: "1 1 clamp(220px, 28vw, 320px)", textDecoration: "none", cursor: "none", display: "block" }}
               >
                 <img
-                  src={`/media/tours/${related.imageSlot.replace(/\.[^.]+$/, "")}-480.webp`}
+                  src={`/media/tours/${related.imageSlot}`}
                   alt={related.imageAlt}
                   width={750} height={500}
                   loading="lazy" decoding="async"

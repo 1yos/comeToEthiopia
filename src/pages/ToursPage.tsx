@@ -500,7 +500,8 @@ function TourCard({
   index: number;
 }) {
   const [hovered, setHovered] = useState(false);
-  const imgSrc = `/media/tours/${tour.imageSlot.replace(/\.[^.]+$/, "")}-480.webp`;
+  const imgSrc = `/media/tours/${tour.imageSlot}`;
+
   const slug = tour.slug ?? tour.id;
 
   const difficultyColor: Record<string, string> = {

@@ -6,6 +6,7 @@ import { useEthiopianYear } from "@/hooks/useEthiopianDate";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { siteContent } from "@/data/content";
 import { useI18n } from "@/hooks/useI18n";
+import { useInternalLink } from "@/hooks/useInternalLink";
 import {
   DURATION,
   EASE,
@@ -60,6 +61,7 @@ export function Hero({
   const ethiopianYear = useEthiopianYear();
   const { hero } = siteContent;
   const t = useI18n(lang);
+  const internalLink = useInternalLink();
 
   // Framer Motion scroll-linked parallax
   const { scrollYProgress } = useScroll({
@@ -343,6 +345,7 @@ export function Hero({
           <div className="hero-cta">
             <a
               href={hero.ctaHref}
+              onClick={internalLink(hero.ctaHref)}
               data-magnetic
               data-cursor-label="Let's go"
               style={{

@@ -20,10 +20,13 @@ export const siteContent = {
     logo: "Come to Ethiopia Tours",
     logoGeez: "ኢትዮጵያ" /* TODO-REVIEW */,
     links: [
-      { label: "Tours", href: "#popular-tours" },
-      { label: "Destinations", href: "#scroll-story" },
-      { label: "When to Go", href: "#when-to-go" },
-      { label: "Plan Trip", href: "#plan-trip" },
+      { label: "Tours", href: "/tours" },
+      { label: "Destinations", href: "/destinations" },
+      { label: "When to Go", href: "/when-to-go" },
+      { label: "Culture", href: "/culture" },
+      { label: "Gallery", href: "/gallery" },
+      { label: "About", href: "/about" },
+      { label: "Plan Trip", href: "/plan" },
     ],
     audienceToggle: {
       visitor: "Visiting Ethiopia",
@@ -60,7 +63,7 @@ export const siteContent = {
       "ከአዲስ አበባ ወደ ሲሜን፣ ላሊበላ፣ ዳናኪልና ሌሎች ቦታዎች — ሙያዊ ጉዞ ድርጅት።" /* TODO-REVIEW */,
     cta: "Plan your trip",
     ctaLocal: "ጉዞ ያቅዱ" /* TODO-REVIEW */,
-    ctaHref: "#plan-trip",
+    ctaHref: "/plan",
     scrollCue: "Scroll",
     annotation: {
       text: "4,543 m — Ras Dashen",
@@ -239,7 +242,7 @@ export const siteContent = {
   // Reframed as practical travel phrases — not proverbs or cultural commentary.
   voices: {
     sectionLabel: "Words for the road",
-    headline: "Twelve words that will open doors.",
+    headline: "Seven words that will open doors.",
     subline: "You do not need to speak Amharic. But these will matter.",
     phrases: [
       /* TODO-REVIEW: All Amharic translations need native-speaker verification */

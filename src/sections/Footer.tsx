@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEthiopianDate } from "@/hooks/useEthiopianDate";
 import { useKonami } from "@/hooks/useKonami";
@@ -140,8 +141,8 @@ export function Footer({ lang }: { lang: import("@/App").Lang }) {
           >
             {footer.tagline}
           </p>
-          <a
-            href="/plan"
+          <Link
+            to="/plan"
             data-cursor-label="Plan trip"
             style={{
               fontFamily: "var(--font-body)",
@@ -165,7 +166,7 @@ export function Footer({ lang }: { lang: import("@/App").Lang }) {
             }
           >
             Plan your trip
-          </a>
+          </Link>
         </div>
 
         {/* Links */}
