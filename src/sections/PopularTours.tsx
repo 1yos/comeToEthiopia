@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+﻿import { useRef, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { gsap } from "gsap";
@@ -11,7 +11,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Popular Tours — asymmetric horizontal rail.
+ * Popular Tours â€” asymmetric horizontal rail.
  *
  * Layout: NOT a card grid. Each tour gets a tall "poster" strip of varying width.
  * The first poster is wider (feature slot). Odd ones are taller.
@@ -24,21 +24,21 @@ gsap.registerPlugin(ScrollTrigger);
 
 // Ge'ez numeral map for tour durations
 const GEEZ_NUMERALS: Record<number, string> = {
-  1: "፩",
-  2: "፪",
-  3: "፫",
-  4: "፬",
-  5: "፭",
-  6: "፮",
-  7: "፯",
-  8: "፰",
-  9: "፱",
-  10: "፲",
-  14: "፲፬",
-  15: "፲፭",
+  1: "\u1369",
+  2: "\u136A",
+  3: "\u136B",
+  4: "\u136C",
+  5: "\u136D",
+  6: "\u136E",
+  7: "\u136F",
+  8: "\u1370",
+  9: "\u1371",
+  10: "\u1372",
+  14: "\u1372\u136C",
+  15: "\u1372\u136D",
 }; /* TODO-REVIEW: Ge'ez numerals */
 
-// Accent colors cycle per poster — alternating ochre / highland / indigo
+// Accent colors cycle per poster â€” alternating ochre / highland / indigo
 const ACCENT_CYCLE = [
   "var(--ochre)",
   "var(--highland)",
@@ -65,7 +65,7 @@ export function PopularTours({
 
   useEffect(() => {
     if (reduced || !railRef.current || !containerRef.current) return;
-    // Only pin on desktop (≥768px)
+    // Only pin on desktop (â‰¥768px)
     if (window.innerWidth < 768) return;
 
     const ctx = gsap.context(() => {
@@ -94,10 +94,10 @@ export function PopularTours({
       ref={containerRef}
       id="popular-tours"
       role="region"
-      aria-label="Popular tours — Come to Ethiopia Tours"
+      aria-label="Popular tours â€” Come to Ethiopia Tours"
       style={{ backgroundColor: "var(--ink)" }}
     >
-      {/* Section header — visible before the rail begins */}
+      {/* Section header â€” visible before the rail begins */}
       <div
         style={{
           padding:
@@ -163,7 +163,7 @@ export function PopularTours({
       <div
         ref={railRef}
         role="list"
-        aria-label="Tour posters — scroll to see more"
+        aria-label="Tour posters â€” scroll to see more"
         style={{
           display: "flex",
           flexDirection: isMobile ? "column" : "row",
@@ -185,7 +185,7 @@ export function PopularTours({
           />
         ))}
 
-        {/* End cap: "All tours" link — internal route */}
+        {/* End cap: "All tours" link â€” internal route */}
         <Link
           to="/tours"
           data-cursor-label="All tours"
@@ -215,7 +215,7 @@ export function PopularTours({
               marginBottom: 12,
             }}
           >
-            All tours →
+            All tours â†’
           </div>
           <div
             style={{
@@ -267,7 +267,7 @@ export function PopularTours({
   );
 }
 
-// ── Tour poster ──────────────────────────────────────────────────────────────
+// â”€â”€ Tour poster â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function TourPoster({
   tour,
@@ -282,7 +282,7 @@ function TourPoster({
 }) {
   const [hovered, setHovered] = useState(false);
 
-  // Alternate poster widths — feature slot is wider, odd ones slightly narrower
+  // Alternate poster widths â€” feature slot is wider, odd ones slightly narrower
   const width = featured
     ? "clamp(260px, 32vw, 420px)"
     : index % 3 === 0
@@ -306,7 +306,7 @@ function TourPoster({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Background photo — real image from company site */}
+      {/* Background photo â€” real image from company site */}
       <div
         style={{
           position: "absolute",
@@ -317,7 +317,7 @@ function TourPoster({
         }}
       >
         <img
-          src={`/media/tours/${tour.imageSlot.replace(/\.[^.]+$/, "")}-480.webp`}
+          src={`/media/tours/${tour.imageSlot}`}
           alt={tour.imageAlt}
           width={750}
           height={500}
@@ -333,7 +333,7 @@ function TourPoster({
         />
       </div>
 
-      {/* Base gradient — bottom-up always visible */}
+      {/* Base gradient â€” bottom-up always visible */}
       <div
         style={{
           position: "absolute",
@@ -344,7 +344,7 @@ function TourPoster({
         }}
       />
 
-      {/* Hover overlay — clips in from bottom */}
+      {/* Hover overlay â€” clips in from bottom */}
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: hovered ? "0%" : "100%" }}
@@ -359,7 +359,7 @@ function TourPoster({
         aria-hidden="true"
       />
 
-      {/* Content — always above gradient */}
+      {/* Content â€” always above gradient */}
       <div
         style={{
           position: "relative",
@@ -381,7 +381,7 @@ function TourPoster({
               exit={{ opacity: 0 }}
               transition={{ duration: DURATION.micro }}
             >
-              {/* Ge'ez duration — dominant typographic element */}
+              {/* Ge'ez duration â€” dominant typographic element */}
               <div
                 className="geez"
                 aria-label={`${tour.duration} ${dayLabel}`}
@@ -452,7 +452,7 @@ function TourPoster({
                   marginBottom: 12,
                 }}
               >
-                {tour.duration} {dayLabel} · {tour.difficulty}
+                {tour.duration} {dayLabel} Â· {tour.difficulty}
               </div>
 
               {/* Tour name on hover */}
@@ -470,7 +470,7 @@ function TourPoster({
                 {tour.name}
               </h3>
 
-              {/* Highlights — first 3 */}
+              {/* Highlights â€” first 3 */}
               <ul
                 role="list"
                 style={{
@@ -517,12 +517,10 @@ function TourPoster({
                 ))}
               </ul>
 
-              {/* CTA link to real tour page */}
-              <a
-                href={tour.liveUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`View full itinerary for ${tour.name} on cometoethiopiatours.com`}
+              {/* CTA link â€” internal tour detail page */}
+              <Link
+                to={`/tours/${tour.slug ?? tour.id}`}
+                aria-label={`View full itinerary for ${tour.name}`}
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   display: "inline-flex",
@@ -565,7 +563,7 @@ function TourPoster({
                     strokeLinejoin="round"
                   />
                 </svg>
-              </a>
+              </Link>
             </motion.div>
           )}
         </AnimatePresence>

@@ -12,7 +12,7 @@
     "check-data": "npx tsx scripts/check-destinations.ts"
   },
   "dependencies": {
-    "@react-three/fiber": "^8.17.10",
+    "@react-three/fiber": "^9.8.2",
     "framer-motion": "^11.3.28",
     "gsap": "^3.12.5",
     "leaflet": "^1.9.4",
@@ -20,14 +20,13 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.1",
-    "three": "^0.167.1"
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.22",
     "@types/node": "^26.6.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@types/three": "^0.167.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
     "glob": "^13.0.6",
