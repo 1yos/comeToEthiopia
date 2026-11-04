@@ -8,4 +8,8 @@ export { GalleryAdminPage } from "./pages/GalleryAdminPage";
 export { ContentAdminPage } from "./pages/ContentAdminPage";
 export { ReviewsAdminPage } from "./pages/ReviewsAdminPage";
 export { ContactAdminPage } from "./pages/ContactAdminPage";
+export { EnquiriesPage } from "./pages/EnquiriesPage";
+export { AnalyticsPage } from "./pages/AnalyticsPage";
+export { FeaturedToursPage } from "./pages/FeaturedToursPage";
+export { SiteHealthPage } from "./pages/SiteHealthPage";
 export { AdminLayout } from "./components/AdminLayout";

@@ -13,6 +13,7 @@ import { Preloader } from "@/components/Preloader";
 import { ScrollDevOverlay } from "@/components/ScrollDevOverlay";
 import { Layout } from "@/components/Layout";
 import { useLenis } from "@/hooks/useLenis";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 import { HomePage } from "@/pages/HomePage";
 import { ToursPage } from "@/pages/ToursPage";
@@ -36,6 +37,10 @@ import {
   ContentAdminPage,
   ReviewsAdminPage,
   ContactAdminPage,
+  EnquiriesPage,
+  AnalyticsPage,
+  FeaturedToursPage,
+  SiteHealthPage,
   AdminLayout,
 } from "@/admin/index";
 
@@ -87,6 +92,7 @@ export default function App() {
   });
 
   useLenis();
+  usePageTracking();
 
   const handleAudienceChange = useCallback((mode: AudienceMode) => {
     setAudience(mode);
@@ -242,6 +248,38 @@ export default function App() {
             element={
               <AdminLayout>
                 <ContactAdminPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/enquiries"
+            element={
+              <AdminLayout>
+                <EnquiriesPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <AdminLayout>
+                <AnalyticsPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/featured"
+            element={
+              <AdminLayout>
+                <FeaturedToursPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/health"
+            element={
+              <AdminLayout>
+                <SiteHealthPage />
               </AdminLayout>
             }
           />

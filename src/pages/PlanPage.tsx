@@ -79,6 +79,36 @@ export function PlanPage({ audience }: PlanPageProps) {
     if (!canSubmit) return;
     setFormState("submitting");
     await new Promise((r) => setTimeout(r, 900));
+
+    // Save enquiry to localStorage for admin panel
+    try {
+      const STORAGE_KEY = "cte-enquiries";
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+      const enquiry = {
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        name,
+        email,
+        selectedTourIds,
+        selectedTourNames: selectedTours.map((t) => t.name),
+        tourFreeText,
+        dates,
+        groupSize,
+        notes,
+        status: "new" as const,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([enquiry, ...existing]));
+
+      // Increment enquiry count for analytics
+      const analytics = JSON.parse(
+        localStorage.getItem("cte-analytics") ?? "{}",
+      );
+      analytics.enquiries = (analytics.enquiries ?? 0) + 1;
+      localStorage.setItem("cte-analytics", JSON.stringify(analytics));
+    } catch {
+      /* ignore storage errors */
+    }
+
     setFormState("success");
   };
 
