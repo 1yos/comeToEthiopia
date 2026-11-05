@@ -39,47 +39,35 @@ export function ToursAdminPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Tours</h1>
-          <p className="admin-page-sub">
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">Tours</div>
+          <div className="admin-section-header__sub">
             {tours.length} tours in the catalogue.
-          </p>
+          </div>
         </div>
-        <Link to="/admin/tours/new" className="admin-btn admin-btn--primary">
-          + Add tour
-        </Link>
+        <div className="admin-section-header__actions">
+          <Link to="/admin/tours/new" className="admin-btn admin-btn--primary">
+            + Add tour
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          marginBottom: 20,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
+      <div className="admin-filter-bar">
         <input
           type="text"
           placeholder="Search by name or region…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="admin-input"
-          style={{ maxWidth: 280 }}
+          className="admin-input admin-filter-bar__input"
         />
-        <div style={{ display: "flex", gap: 4 }}>
+        <div className="admin-filter-bar__chips">
           {(["all", "easy", "moderate", "demanding"] as const).map((d) => (
             <button
               key={d}
               onClick={() => setFilter(d)}
-              className="admin-btn admin-btn--secondary admin-btn--sm"
-              style={{
-                backgroundColor: filter === d ? "var(--ink)" : "transparent",
-                color: filter === d ? "var(--paper)" : "var(--ink)",
-                border: `1px solid ${filter === d ? "var(--ink)" : "rgba(18,17,16,0.2)"}`,
-              }}
+              className={`admin-filter-chip${filter === d ? " admin-filter-chip--active" : ""}`}
             >
               {d === "all" ? "All" : DIFFICULTY_LABELS[d]}
             </button>
@@ -90,8 +78,7 @@ export function ToursAdminPage() {
             marginLeft: "auto",
             fontFamily: "var(--font-body)",
             fontSize: 11,
-            color: "var(--ink)",
-            opacity: 0.4,
+            color: "var(--a-muted)",
           }}
         >
           {filtered.length} result{filtered.length !== 1 ? "s" : ""}

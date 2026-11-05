@@ -21,10 +21,20 @@ const EMPTY_TOUR: Omit<Tour, "id"> = {
 };
 
 const INTEREST_OPTIONS = [
-  "history", "culture", "trekking", "wildlife", "coffee",
+  "history",
+  "culture",
+  "trekking",
+  "wildlife",
+  "coffee",
 ];
 
-function Toast({ message, type }: { message: string; type: "success" | "error" }) {
+function Toast({
+  message,
+  type,
+}: {
+  message: string;
+  type: "success" | "error";
+}) {
   return (
     <div className={`admin-toast admin-toast--${type}`} role="status">
       <span>{type === "success" ? "✓" : "✗"}</span>
@@ -39,7 +49,10 @@ export function TourEditPage() {
   const isNew = id === "new";
 
   const [form, setForm] = useState<Omit<Tour, "id">>(EMPTY_TOUR);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -57,13 +70,20 @@ export function TourEditPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
+  const set = <K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   // ── Array field helpers ──────────────────────────────────────────────────
 
-  const setArrayItem = (key: "highlights" | "includes" | "excludes", i: number, value: string) => {
+  const setArrayItem = (
+    key: "highlights" | "includes" | "excludes",
+    i: number,
+    value: string,
+  ) => {
     setForm((prev) => {
       const arr = [...(prev[key] as string[])];
       arr[i] = value;
@@ -75,7 +95,10 @@ export function TourEditPage() {
     setForm((prev) => ({ ...prev, [key]: [...(prev[key] as string[]), ""] }));
   };
 
-  const removeArrayItem = (key: "highlights" | "includes" | "excludes", i: number) => {
+  const removeArrayItem = (
+    key: "highlights" | "includes" | "excludes",
+    i: number,
+  ) => {
     setForm((prev) => {
       const arr = (prev[key] as string[]).filter((_, idx) => idx !== i);
       return { ...prev, [key]: arr };
@@ -127,32 +150,45 @@ export function TourEditPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) { showToast("Tour name is required.", "error"); return; }
-    if (!form.imageSlot.trim()) { showToast("Image filename is required.", "error"); return; }
+    if (!form.name.trim()) {
+      showToast("Tour name is required.", "error");
+      return;
+    }
+    if (!form.imageSlot.trim()) {
+      showToast("Image filename is required.", "error");
+      return;
+    }
     setSaving(true);
 
     // In Phase 2 this will write to /public/cms/tours.json
     // For now: show success and navigate back
     await new Promise((r) => setTimeout(r, 600));
     setSaving(false);
-    showToast(isNew ? "Tour created (save to JSON to persist)." : "Tour updated (save to JSON to persist).", "success");
+    showToast(
+      isNew
+        ? "Tour created (save to JSON to persist)."
+        : "Tour updated (save to JSON to persist).",
+      "success",
+    );
     setTimeout(() => navigate("/admin/tours"), 1200);
   };
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">
             {isNew ? "Add tour" : "Edit tour"}
-          </h1>
+          </div>
           {!isNew && (
-            <p className="admin-page-sub">{form.name}</p>
+            <div className="admin-section-header__sub">{form.name}</div>
           )}
         </div>
-        <Link to="/admin/tours" className="admin-btn admin-btn--secondary">
-          ← Back to tours
-        </Link>
+        <div className="admin-section-header__actions">
+          <Link to="/admin/tours" className="admin-btn admin-btn--secondary">
+            ← Back to tours
+          </Link>
+        </div>
       </div>
 
       <form onSubmit={handleSave} noValidate>
@@ -166,7 +202,6 @@ export function TourEditPage() {
         >
           {/* ── Left column ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
             {/* Basic info */}
             <div className="admin-card">
               <div className="admin-card__title">Basic information</div>
@@ -219,7 +254,9 @@ export function TourEditPage() {
                     max={30}
                     className="admin-input"
                     value={form.duration}
-                    onChange={(e) => set("duration", parseInt(e.target.value) || 1)}
+                    onChange={(e) =>
+                      set("duration", parseInt(e.target.value) || 1)
+                    }
                   />
                 </div>
                 <div className="admin-field" style={{ marginBottom: 0 }}>
@@ -230,7 +267,9 @@ export function TourEditPage() {
                     id="tour-difficulty"
                     className="admin-select"
                     value={form.difficulty}
-                    onChange={(e) => set("difficulty", e.target.value as Tour["difficulty"])}
+                    onChange={(e) =>
+                      set("difficulty", e.target.value as Tour["difficulty"])
+                    }
                   >
                     <option value="easy">Easy</option>
                     <option value="moderate">Moderate</option>
@@ -264,7 +303,9 @@ export function TourEditPage() {
                           fontSize: 11,
                           letterSpacing: "0.06em",
                           padding: "5px 12px",
-                          backgroundColor: active ? "var(--ink)" : "transparent",
+                          backgroundColor: active
+                            ? "var(--ink)"
+                            : "transparent",
                           color: active ? "var(--paper)" : "var(--ink)",
                           border: `1px solid ${active ? "var(--ink)" : "rgba(18,17,16,0.2)"}`,
                           cursor: "pointer",
@@ -281,7 +322,9 @@ export function TourEditPage() {
 
             {/* Highlights */}
             <div className="admin-card">
-              <div className="admin-card__title">Highlights (3–5 specific points)</div>
+              <div className="admin-card__title">
+                Highlights (3–5 specific points)
+              </div>
               {form.highlights.map((h, i) => (
                 <div
                   key={i}
@@ -290,7 +333,9 @@ export function TourEditPage() {
                   <input
                     className="admin-input"
                     value={h}
-                    onChange={(e) => setArrayItem("highlights", i, e.target.value)}
+                    onChange={(e) =>
+                      setArrayItem("highlights", i, e.target.value)
+                    }
                     placeholder={`Highlight ${i + 1}`}
                     style={{ flex: 1 }}
                   />
@@ -317,7 +362,8 @@ export function TourEditPage() {
             {/* Day-by-day itinerary */}
             <div className="admin-card">
               <div className="admin-card__title">
-                Day-by-day itinerary ({form.days.length} day{form.days.length !== 1 ? "s" : ""})
+                Day-by-day itinerary ({form.days.length} day
+                {form.days.length !== 1 ? "s" : ""})
               </div>
               {form.days.map((day, i) => (
                 <div
@@ -400,7 +446,11 @@ export function TourEditPage() {
                         className="admin-input"
                         value={item}
                         onChange={(e) => setArrayItem(key, i, e.target.value)}
-                        placeholder={key === "includes" ? "e.g. Domestic flights" : "e.g. International flights"}
+                        placeholder={
+                          key === "includes"
+                            ? "e.g. Domestic flights"
+                            : "e.g. International flights"
+                        }
                         style={{ flex: 1, fontSize: 12 }}
                       />
                       {(form[key] as string[]).length > 1 && (
@@ -428,7 +478,6 @@ export function TourEditPage() {
 
           {/* ── Right column ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
             {/* Image */}
             <div className="admin-card">
               <div className="admin-card__title">Photo</div>
@@ -486,7 +535,10 @@ export function TourEditPage() {
                   onChange={(e) =>
                     set(
                       "regionIds",
-                      e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                      e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
                     )
                   }
                   placeholder="e.g. lalibela, gondar, simien"
@@ -516,7 +568,11 @@ export function TourEditPage() {
               type="submit"
               className="admin-btn admin-btn--primary"
               disabled={saving}
-              style={{ width: "100%", justifyContent: "center", padding: "14px" }}
+              style={{
+                width: "100%",
+                justifyContent: "center",
+                padding: "14px",
+              }}
             >
               {saving ? "Saving…" : isNew ? "Create tour" : "Save changes"}
             </button>

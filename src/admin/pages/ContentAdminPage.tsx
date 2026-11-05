@@ -56,10 +56,12 @@ export function ContentAdminPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Page content</h1>
-          <p className="admin-page-sub">Hero, footer, and About page text.</p>
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">Page content</div>
+          <div className="admin-section-header__sub">
+            Hero, footer, and About page text.
+          </div>
         </div>
       </div>
 

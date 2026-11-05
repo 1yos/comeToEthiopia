@@ -145,28 +145,30 @@ export function DestinationsAdminPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Destinations</h1>
-          <p className="admin-page-sub">
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">Destinations</div>
+          <div className="admin-section-header__sub">
             {data.length} destinations on the map. Click the map to add a new
             pin.
-          </p>
+          </div>
         </div>
-        <button
-          className="admin-btn admin-btn--primary"
-          onClick={() =>
-            setEditing({
-              _isNew: true,
-              lat: 9.0,
-              lng: 40.0,
-              category: "nature",
-              featured: false,
-            })
-          }
-        >
-          + Add destination
-        </button>
+        <div className="admin-section-header__actions">
+          <button
+            className="admin-btn admin-btn--primary"
+            onClick={() =>
+              setEditing({
+                _isNew: true,
+                lat: 9.0,
+                lng: 40.0,
+                category: "nature",
+                featured: false,
+              })
+            }
+          >
+            + Add destination
+          </button>
+        </div>
       </div>
 
       <div

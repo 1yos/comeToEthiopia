@@ -191,62 +191,19 @@ function KpiCard({
   return (
     <Link to={href} style={{ textDecoration: "none", display: "block" }}>
       <div
+        className="admin-stat"
         style={{
-          backgroundColor: "var(--a-surface)",
-          border: "1px solid var(--a-border)",
-          borderRadius: "var(--a-radius)",
           borderTop: `3px solid ${accentColor}`,
-          padding: "18px 20px 16px",
-          boxShadow: "var(--a-shadow-sm)",
-          transition: "box-shadow 0.18s, transform 0.18s",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.boxShadow = "var(--a-shadow)";
-          (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.boxShadow =
-            "var(--a-shadow-sm)";
-          (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+          minHeight: 130,
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <div
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--a-muted)",
-            marginBottom: 10,
-          }}
-        >
-          {label}
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "clamp(1.6rem, 2.5vw, 2.2rem)",
-            fontWeight: 800,
-            color: "var(--a-text)",
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-            marginBottom: sub ? 6 : 0,
-          }}
-        >
+        <div className="admin-stat__label">{label}</div>
+        <div className="admin-stat__number" style={{ marginTop: "auto" }}>
           {value}
         </div>
-        {sub && (
-          <div
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              color: "var(--a-muted)",
-            }}
-          >
-            {sub}
-          </div>
-        )}
+        {sub && <div className="admin-stat__sub">{sub}</div>}
       </div>
     </Link>
   );

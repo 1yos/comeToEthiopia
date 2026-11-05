@@ -163,17 +163,21 @@ export function GalleryAdminPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Gallery</h1>
-          <p className="admin-page-sub">{items.length} photos.</p>
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">Gallery</div>
+          <div className="admin-section-header__sub">
+            {items.length} photos.
+          </div>
         </div>
-        <button
-          className="admin-btn admin-btn--primary"
-          onClick={() => setAdding(true)}
-        >
-          + Add photo
-        </button>
+        <div className="admin-section-header__actions">
+          <button
+            className="admin-btn admin-btn--primary"
+            onClick={() => setAdding(true)}
+          >
+            + Add photo
+          </button>
+        </div>
       </div>
 
       {/* Add photo form */}

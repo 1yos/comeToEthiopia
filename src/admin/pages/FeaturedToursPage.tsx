@@ -7,17 +7,27 @@ function loadFeatured(): string[] {
   try {
     const saved = localStorage.getItem(FEATURED_KEY);
     if (saved) return JSON.parse(saved);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return defaultFeatured;
 }
 
 function saveFeatured(ids: string[]): void {
   try {
     localStorage.setItem(FEATURED_KEY, JSON.stringify(ids));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
-function Toast({ message, type }: { message: string; type: "success" | "error" }) {
+function Toast({
+  message,
+  type,
+}: {
+  message: string;
+  type: "success" | "error";
+}) {
   return (
     <div className={`admin-toast admin-toast--${type}`} role="status">
       {message}
@@ -28,7 +38,10 @@ function Toast({ message, type }: { message: string; type: "success" | "error" }
 export function FeaturedToursPage() {
   const [featured, setFeatured] = useState<string[]>(loadFeatured);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -94,13 +107,13 @@ export function FeaturedToursPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Featured Tours</h1>
-          <p className="admin-page-sub">
-            These tours appear in the Popular Tours rail on the home page.
-            Drag to reorder. Maximum 10.
-          </p>
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">Featured Tours</div>
+          <div className="admin-section-header__sub">
+            These tours appear in the Popular Tours rail on the home page. Drag
+            to reorder. Maximum 10.
+          </div>
         </div>
       </div>
 
@@ -130,7 +143,9 @@ export function FeaturedToursPage() {
           </div>
           {featuredTours.length === 0 ? (
             <div className="admin-empty">
-              <div className="admin-empty__text">No featured tours. Add some from the list on the right.</div>
+              <div className="admin-empty__text">
+                No featured tours. Add some from the list on the right.
+              </div>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column" }}>
@@ -155,7 +170,12 @@ export function FeaturedToursPage() {
                 >
                   {/* Drag handle */}
                   <div className="admin-drag-handle" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="currentColor"
+                    >
                       <rect x="3" y="2" width="8" height="1.5" />
                       <rect x="3" y="6" width="8" height="1.5" />
                       <rect x="3" y="10" width="8" height="1.5" />
@@ -206,7 +226,8 @@ export function FeaturedToursPage() {
                         marginTop: 2,
                       }}
                     >
-                      {tour.duration} {tour.duration === 1 ? "day" : "days"} · {tour.difficulty}
+                      {tour.duration} {tour.duration === 1 ? "day" : "days"} ·{" "}
+                      {tour.difficulty}
                     </div>
                   </div>
 
@@ -216,7 +237,10 @@ export function FeaturedToursPage() {
                       onClick={() => moveUp(idx)}
                       disabled={idx === 0}
                       className="admin-btn admin-btn--secondary admin-btn--sm"
-                      style={{ padding: "4px 8px", opacity: idx === 0 ? 0.3 : 1 }}
+                      style={{
+                        padding: "4px 8px",
+                        opacity: idx === 0 ? 0.3 : 1,
+                      }}
                       aria-label="Move up"
                     >
                       ↑
@@ -249,7 +273,10 @@ export function FeaturedToursPage() {
         </div>
 
         {/* Available tours to add */}
-        <div className="admin-card" style={{ padding: 0, position: "sticky", top: 72 }}>
+        <div
+          className="admin-card"
+          style={{ padding: 0, position: "sticky", top: 72 }}
+        >
           <div
             style={{
               padding: "14px 20px",
@@ -267,7 +294,9 @@ export function FeaturedToursPage() {
           <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
             {availableTours.length === 0 ? (
               <div className="admin-empty">
-                <div className="admin-empty__text">All tours are already featured.</div>
+                <div className="admin-empty__text">
+                  All tours are already featured.
+                </div>
               </div>
             ) : (
               availableTours.map((tour) => (

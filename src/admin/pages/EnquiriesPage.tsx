@@ -122,67 +122,67 @@ export function EnquiriesPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">
             Enquiries
             {newCount > 0 && (
               <span
                 style={{
                   display: "inline-block",
                   marginLeft: 10,
-                  backgroundColor: "var(--ochre)",
-                  color: "var(--ink)",
+                  backgroundColor: "var(--a-accent)",
+                  color: "white",
                   fontFamily: "var(--font-body)",
                   fontSize: 11,
                   fontWeight: 700,
                   padding: "2px 8px",
+                  borderRadius: "20px",
                   verticalAlign: "middle",
                 }}
               >
                 {newCount} new
               </span>
             )}
-          </h1>
-          <p className="admin-page-sub">
+          </div>
+          <div className="admin-section-header__sub">
             {enquiries.length} total · {newCount} unread
-          </p>
+          </div>
         </div>
-        <button
-          className="admin-btn admin-btn--secondary"
-          onClick={() => {
-            exportEnquiriesCSV();
-            showToast("CSV downloaded.", "success");
-          }}
-          disabled={enquiries.length === 0}
-        >
-          Export CSV
-        </button>
+        <div className="admin-section-header__actions">
+          <button
+            className="admin-btn admin-btn--secondary"
+            onClick={() => {
+              exportEnquiriesCSV();
+              showToast("CSV downloaded.", "success");
+            }}
+            disabled={enquiries.length === 0}
+          >
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Filter tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-        {(["all", "new", "replied", "archived"] as const).map((f) => {
-          const count =
-            f === "all"
-              ? enquiries.length
-              : enquiries.filter((e) => e.status === f).length;
-          return (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className="admin-btn admin-btn--secondary admin-btn--sm"
-              style={{
-                backgroundColor: filter === f ? "var(--ink)" : "transparent",
-                color: filter === f ? "var(--paper)" : "var(--ink)",
-                border: `1px solid ${filter === f ? "var(--ink)" : "rgba(18,17,16,0.2)"}`,
-                textTransform: "capitalize",
-              }}
-            >
-              {f === "all" ? "All" : STATUS_LABELS[f]} ({count})
-            </button>
-          );
-        })}
+      <div className="admin-filter-bar">
+        <div className="admin-filter-bar__chips">
+          {(["all", "new", "replied", "archived"] as const).map((f) => {
+            const count =
+              f === "all"
+                ? enquiries.length
+                : enquiries.filter((e) => e.status === f).length;
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`admin-filter-chip${filter === f ? " admin-filter-chip--active" : ""}`}
+                style={{ textTransform: "capitalize" }}
+              >
+                {f === "all" ? "All" : STATUS_LABELS[f]} ({count})
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div

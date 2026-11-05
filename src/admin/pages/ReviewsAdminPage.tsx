@@ -40,7 +40,13 @@ const INITIAL_REVIEWS: Review[] = [
   },
 ];
 
-function Toast({ message, type }: { message: string; type: "success" | "error" }) {
+function Toast({
+  message,
+  type,
+}: {
+  message: string;
+  type: "success" | "error";
+}) {
   return (
     <div className={`admin-toast admin-toast--${type}`} role="status">
       {message}
@@ -50,7 +56,10 @@ function Toast({ message, type }: { message: string; type: "success" | "error" }
 
 export function ReviewsAdminPage() {
   const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -67,7 +76,10 @@ export function ReviewsAdminPage() {
     e.preventDefault();
     for (const r of reviews) {
       if (!r.author.trim() || !r.text.trim()) {
-        showToast("Author name and review text are required for all reviews.", "error");
+        showToast(
+          "Author name and review text are required for all reviews.",
+          "error",
+        );
         return;
       }
     }
@@ -77,12 +89,12 @@ export function ReviewsAdminPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Reviews</h1>
-          <p className="admin-page-sub">
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">Reviews</div>
+          <div className="admin-section-header__sub">
             The three review cards shown on the home page.
-          </p>
+          </div>
         </div>
       </div>
 
@@ -130,31 +142,44 @@ export function ReviewsAdminPage() {
                 }}
               >
                 <div className="admin-field" style={{ marginBottom: 0 }}>
-                  <label className="admin-label" htmlFor={`review-author-${review.id}`}>
+                  <label
+                    className="admin-label"
+                    htmlFor={`review-author-${review.id}`}
+                  >
                     Author name *
                   </label>
                   <input
                     id={`review-author-${review.id}`}
                     className="admin-input"
                     value={review.author}
-                    onChange={(e) => update(review.id, "author", e.target.value)}
+                    onChange={(e) =>
+                      update(review.id, "author", e.target.value)
+                    }
                     placeholder="Full name"
                   />
                 </div>
                 <div className="admin-field" style={{ marginBottom: 0 }}>
-                  <label className="admin-label" htmlFor={`review-location-${review.id}`}>
+                  <label
+                    className="admin-label"
+                    htmlFor={`review-location-${review.id}`}
+                  >
                     Location
                   </label>
                   <input
                     id={`review-location-${review.id}`}
                     className="admin-input"
                     value={review.location}
-                    onChange={(e) => update(review.id, "location", e.target.value)}
+                    onChange={(e) =>
+                      update(review.id, "location", e.target.value)
+                    }
                     placeholder="e.g. Stockholm, Sweden"
                   />
                 </div>
                 <div className="admin-field" style={{ marginBottom: 0 }}>
-                  <label className="admin-label" htmlFor={`review-date-${review.id}`}>
+                  <label
+                    className="admin-label"
+                    htmlFor={`review-date-${review.id}`}
+                  >
                     Date label
                   </label>
                   <input
@@ -166,7 +191,10 @@ export function ReviewsAdminPage() {
                   />
                 </div>
                 <div className="admin-field" style={{ marginBottom: 0 }}>
-                  <label className="admin-label" htmlFor={`review-avatar-${review.id}`}>
+                  <label
+                    className="admin-label"
+                    htmlFor={`review-avatar-${review.id}`}
+                  >
                     Avatar initials
                   </label>
                   <input
@@ -174,14 +202,19 @@ export function ReviewsAdminPage() {
                     className="admin-input"
                     value={review.avatar}
                     maxLength={2}
-                    onChange={(e) => update(review.id, "avatar", e.target.value.toUpperCase())}
+                    onChange={(e) =>
+                      update(review.id, "avatar", e.target.value.toUpperCase())
+                    }
                     placeholder="e.g. TL"
                   />
                 </div>
               </div>
 
               <div className="admin-field">
-                <label className="admin-label" htmlFor={`review-text-${review.id}`}>
+                <label
+                  className="admin-label"
+                  htmlFor={`review-text-${review.id}`}
+                >
                   Review text *
                 </label>
                 <textarea
@@ -193,8 +226,8 @@ export function ReviewsAdminPage() {
                   placeholder="The review text. Specific, no banned phrases."
                 />
                 <span className="admin-input-hint">
-                  {review.text.split(/\s+/).filter(Boolean).length} words.
-                  Keep under 60 for best layout.
+                  {review.text.split(/\s+/).filter(Boolean).length} words. Keep
+                  under 60 for best layout.
                 </span>
               </div>
             </div>

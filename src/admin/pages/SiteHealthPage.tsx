@@ -207,9 +207,9 @@ export function SiteHealthPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">
             Site health
             {warningCount > 0 && (
               <span
@@ -222,49 +222,48 @@ export function SiteHealthPage() {
                   fontSize: 11,
                   fontWeight: 700,
                   padding: "2px 8px",
+                  borderRadius: "20px",
                   verticalAlign: "middle",
                 }}
               >
                 {warningCount} {warningCount === 1 ? "issue" : "issues"}
               </span>
             )}
-          </h1>
-          <p className="admin-page-sub">
+          </div>
+          <div className="admin-section-header__sub">
             Content gaps, missing assets, and pending verification items.
-          </p>
+          </div>
         </div>
-        <button
-          className="admin-btn admin-btn--secondary"
-          onClick={runImageCheck}
-          disabled={checkingImages}
-        >
-          {checkingImages ? "Checking images…" : "Check images"}
-        </button>
+        <div className="admin-section-header__actions">
+          <button
+            className="admin-btn admin-btn--secondary"
+            onClick={runImageCheck}
+            disabled={checkingImages}
+          >
+            {checkingImages ? "Checking images…" : "Check images"}
+          </button>
+        </div>
       </div>
 
       {/* Category filter */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-        {(["all", "image", "todo", "info"] as const).map((cat) => {
-          const count =
-            cat === "all"
-              ? allItems.length
-              : allItems.filter((i) => i.category === cat).length;
-          return (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className="admin-btn admin-btn--secondary admin-btn--sm"
-              style={{
-                backgroundColor:
-                  activeCategory === cat ? "var(--ink)" : "transparent",
-                color: activeCategory === cat ? "var(--paper)" : "var(--ink)",
-                border: `1px solid ${activeCategory === cat ? "var(--ink)" : "rgba(18,17,16,0.2)"}`,
-              }}
-            >
-              {cat === "all" ? "All" : CATEGORY_LABELS[cat]} ({count})
-            </button>
-          );
-        })}
+      <div className="admin-filter-bar">
+        <div className="admin-filter-bar__chips">
+          {(["all", "image", "todo", "info"] as const).map((cat) => {
+            const count =
+              cat === "all"
+                ? allItems.length
+                : allItems.filter((i) => i.category === cat).length;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`admin-filter-chip${activeCategory === cat ? " admin-filter-chip--active" : ""}`}
+              >
+                {cat === "all" ? "All" : CATEGORY_LABELS[cat]} ({count})
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="admin-card" style={{ padding: 0 }}>

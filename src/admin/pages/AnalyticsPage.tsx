@@ -45,8 +45,7 @@ function BarChart({ data }: { data: { date: string; views: number }[] }) {
               style={{
                 width: "100%",
                 height: `${Math.max(pct, d.views > 0 ? 8 : 2)}%`,
-                backgroundColor:
-                  pct === 100 ? "var(--ochre)" : "var(--indigo)",
+                backgroundColor: pct === 100 ? "var(--ochre)" : "var(--indigo)",
                 opacity: pct === 100 ? 1 : 0.4 + (pct / 100) * 0.5,
                 transition: "height 0.4s ease",
               }}
@@ -89,19 +88,7 @@ function StatCard({
       />
       <div className="admin-stat__number">{value}</div>
       <div className="admin-stat__label">{label}</div>
-      {sub && (
-        <div
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 10,
-            color: "var(--ink)",
-            opacity: 0.35,
-            marginTop: 4,
-          }}
-        >
-          {sub}
-        </div>
-      )}
+      {sub && <div className="admin-stat__sub">{sub}</div>}
     </div>
   );
 }
@@ -118,8 +105,10 @@ export function AnalyticsPage() {
   if (!stats) {
     return (
       <div>
-        <div className="admin-page-header">
-          <h1 className="admin-page-title">Analytics</h1>
+        <div className="admin-section-header">
+          <div className="admin-section-header__left">
+            <div className="admin-section-header__title">Analytics</div>
+          </div>
         </div>
         <div className="admin-empty">
           <div className="admin-empty__text">Loading analytics…</div>
@@ -132,19 +121,21 @@ export function AnalyticsPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Analytics</h1>
-          <p className="admin-page-sub">
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">Analytics</div>
+          <div className="admin-section-header__sub">
             Tracked in this browser. Resets if localStorage is cleared.
-          </p>
+          </div>
         </div>
-        <button
-          className="admin-btn admin-btn--secondary"
-          onClick={() => setStats(getAnalytics())}
-        >
-          Refresh
-        </button>
+        <div className="admin-section-header__actions">
+          <button
+            className="admin-btn admin-btn--secondary"
+            onClick={() => setStats(getAnalytics())}
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -231,7 +222,8 @@ export function AnalyticsPage() {
                     key={page.path}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "clamp(80px, 10vw, 110px) 1fr clamp(28px, 4vw, 40px)",
+                      gridTemplateColumns:
+                        "clamp(80px, 10vw, 110px) 1fr clamp(28px, 4vw, 40px)",
                       gap: "0 10px",
                       alignItems: "center",
                       padding: "8px 0",
@@ -305,7 +297,8 @@ export function AnalyticsPage() {
               padding: "8px 0",
             }}
           >
-            No tour clicks recorded yet. Click a tour card on the site to start tracking.
+            No tour clicks recorded yet. Click a tour card on the site to start
+            tracking.
           </div>
         ) : (
           <table className="admin-table">
@@ -319,7 +312,9 @@ export function AnalyticsPage() {
               {stats.topTours.map((t, i) => (
                 <tr key={t.tourId}>
                   <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 10 }}
+                    >
                       <span
                         style={{
                           fontFamily: "var(--font-body)",

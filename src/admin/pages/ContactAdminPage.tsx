@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { siteContent } from "@/data/content";
 
-function Toast({ message, type }: { message: string; type: "success" | "error" }) {
+function Toast({
+  message,
+  type,
+}: {
+  message: string;
+  type: "success" | "error";
+}) {
   return (
     <div className={`admin-toast admin-toast--${type}`} role="status">
       {message}
@@ -23,7 +29,10 @@ export function ContactAdminPage() {
   const [youtube, setYoutube] = useState(
     footer.links.find((l) => l.label === "YouTube")?.href ?? "",
   );
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -42,18 +51,17 @@ export function ContactAdminPage() {
 
   return (
     <div>
-      <div className="admin-page-header">
-        <div>
-          <h1 className="admin-page-title">Contact details</h1>
-          <p className="admin-page-sub">
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">Contact details</div>
+          <div className="admin-section-header__sub">
             Phone, email, and social media links used across the site.
-          </p>
+          </div>
         </div>
       </div>
 
       <form onSubmit={handleSave} noValidate>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
           {/* Direct contact */}
           <div className="admin-card">
             <div className="admin-card__title">Direct contact</div>
@@ -139,10 +147,16 @@ export function ContactAdminPage() {
 
           {/* Preview */}
           <div className="admin-card">
-            <div className="admin-card__title">Preview — how these appear on the site</div>
+            <div className="admin-card__title">
+              Preview — how these appear on the site
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                { label: "WhatsApp", value: whatsapp, href: `https://wa.me/${whatsapp.replace(/\D/g, "")}` },
+                {
+                  label: "WhatsApp",
+                  value: whatsapp,
+                  href: `https://wa.me/${whatsapp.replace(/\D/g, "")}`,
+                },
                 { label: "Email", value: email, href: `mailto:${email}` },
                 { label: "Instagram", value: instagram, href: instagram },
                 { label: "TikTok", value: tiktok, href: tiktok },

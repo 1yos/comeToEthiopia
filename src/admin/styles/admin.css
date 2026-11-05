@@ -415,43 +415,186 @@
   background-color: var(--a-surface);
   border: 1px solid var(--a-border);
   border-radius: var(--a-radius);
-  padding: 18px 20px;
+  padding: 22px 24px 20px;
   box-shadow: var(--a-shadow-sm);
   transition:
     box-shadow 0.18s,
-    transform 0.18s;
+    transform 0.18s,
+    border-color 0.18s;
+  cursor: pointer;
 }
 
 .admin-stat:hover {
   box-shadow: var(--a-shadow);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: var(--a-border-md);
 }
 
 .admin-stat__number {
   font-family: var(--font-body);
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 800;
   color: var(--a-text);
-  letter-spacing: -0.04em;
+  letter-spacing: -0.05em;
   line-height: 1;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .admin-stat__label {
   font-family: var(--font-body);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--a-muted);
 }
 
+.admin-stat__sub {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--a-muted);
+  margin-top: 4px;
+}
+
 .admin-stat__accent {
-  width: 24px;
+  width: 28px;
   height: 3px;
   background-color: var(--a-accent);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   border-radius: 2px;
+}
+
+/* ── Page section header (used by inner pages) ─────────────────────────── */
+.admin-section-header {
+  background-color: var(--a-surface);
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-radius);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: var(--a-shadow-sm);
+}
+
+.admin-section-header__left {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-section-header__eyebrow {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+  margin-bottom: 4px;
+}
+
+.admin-section-header__title {
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--a-text);
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.admin-section-header__sub {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--a-muted);
+  margin-top: 3px;
+}
+
+.admin-section-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Filter bar ────────────────────────────────────────────────────────── */
+.admin-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-filter-bar__input {
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.admin-filter-bar__chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.admin-filter-chip {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--a-border-md);
+  background: none;
+  color: var(--a-muted);
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+
+.admin-filter-chip:hover {
+  border-color: var(--a-text);
+  color: var(--a-text);
+}
+
+.admin-filter-chip--active {
+  background-color: var(--a-text);
+  color: white;
+  border-color: var(--a-text);
+}
+
+/* ── Content wrapper ───────────────────────────────────────────────────── */
+.admin-content-card {
+  background-color: var(--a-surface);
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-radius);
+  box-shadow: var(--a-shadow-sm);
+  overflow: hidden;
+}
+
+.admin-content-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--a-border);
+  background-color: var(--a-bg);
+}
+
+.admin-content-card__header-title {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+}
+
+.admin-content-card__footer {
+  padding: 10px 20px;
+  border-top: 1px solid var(--a-border);
+  background-color: var(--a-bg);
 }
 
 /* ── Table ─────────────────────────────────────────────────────────────── */
