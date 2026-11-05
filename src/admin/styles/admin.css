@@ -2257,3 +2257,81 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   26. DENSITY TOGGLE
+   ════════════════════════════════════════════════════════════════════════ */
+.admin-shell--compact .admin-table th {
+  padding: 5px 14px;
+}
+.admin-shell--compact .admin-table td {
+  padding: 7px 14px;
+  font-size: var(--a-text-sm);
+}
+.admin-shell--compact .admin-card {
+  padding: var(--a-space-4);
+}
+.admin-shell--compact .admin-section-header {
+  padding: var(--a-space-4) var(--a-space-5);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   27. DRAG-AND-DROP ZONE
+   ════════════════════════════════════════════════════════════════════════ */
+.admin-dropzone {
+  border: 2px dashed var(--a-border-md);
+  border-radius: var(--a-radius-md);
+  padding: var(--a-space-7) var(--a-space-6);
+  text-align: center;
+  transition:
+    border-color var(--a-t) var(--a-ease),
+    background-color var(--a-t) var(--a-ease);
+  cursor: pointer;
+}
+.admin-dropzone--active {
+  border-color: var(--a-accent);
+  background-color: var(--a-accent-bg);
+}
+.admin-dropzone__icon {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto var(--a-space-3);
+  color: var(--a-muted);
+}
+.admin-dropzone__text {
+  font-size: var(--a-text-sm);
+  color: var(--a-muted);
+}
+.admin-dropzone__hint {
+  font-size: var(--a-text-xs);
+  color: var(--a-faint);
+  margin-top: var(--a-space-1);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   28. VERSION HISTORY
+   ════════════════════════════════════════════════════════════════════════ */
+.admin-version-item {
+  display: flex;
+  align-items: center;
+  gap: var(--a-space-3);
+  padding: var(--a-space-3) 0;
+  border-bottom: 1px solid var(--a-border);
+}
+.admin-version-item:last-child {
+  border-bottom: none;
+}
+.admin-version-item__info {
+  flex: 1;
+  min-width: 0;
+}
+.admin-version-item__time {
+  font-size: var(--a-text-sm);
+  color: var(--a-text);
+  font-weight: 500;
+}
+.admin-version-item__detail {
+  font-size: var(--a-text-xs);
+  color: var(--a-muted);
+  margin-top: 2px;
+}

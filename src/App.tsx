@@ -27,23 +27,98 @@ import { GalleryPage } from "@/pages/GalleryPage";
 import { TravelerInfoPage } from "@/pages/TravelerInfoPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
-// Admin panel
-import {
-  LoginPage,
-  DashboardPage,
-  ToursAdminPage,
-  TourEditPage,
-  DestinationsAdminPage,
-  GalleryAdminPage,
-  ContentAdminPage,
-  ReviewsAdminPage,
-  ContactAdminPage,
-  EnquiriesPage,
-  AnalyticsPage,
-  FeaturedToursPage,
-  SiteHealthPage,
-  AdminLayout,
-} from "@/admin/index";
+// Admin panel — layout and login are eagerly loaded
+import { LoginPage } from "@/admin/pages/LoginPage";
+import { AdminLayout } from "@/admin/components/AdminLayout";
+
+// Admin pages — lazy-loaded to reduce initial bundle
+import { lazy, Suspense } from "react";
+const DashboardPage = lazy(() =>
+  import("@/admin/pages/DashboardPage").then((m) => ({
+    default: m.DashboardPage,
+  })),
+);
+const ToursAdminPage = lazy(() =>
+  import("@/admin/pages/ToursAdminPage").then((m) => ({
+    default: m.ToursAdminPage,
+  })),
+);
+const TourEditPage = lazy(() =>
+  import("@/admin/pages/TourEditPage").then((m) => ({
+    default: m.TourEditPage,
+  })),
+);
+const DestinationsAdminPage = lazy(() =>
+  import("@/admin/pages/DestinationsAdminPage").then((m) => ({
+    default: m.DestinationsAdminPage,
+  })),
+);
+const GalleryAdminPage = lazy(() =>
+  import("@/admin/pages/GalleryAdminPage").then((m) => ({
+    default: m.GalleryAdminPage,
+  })),
+);
+const ContentAdminPage = lazy(() =>
+  import("@/admin/pages/ContentAdminPage").then((m) => ({
+    default: m.ContentAdminPage,
+  })),
+);
+const ReviewsAdminPage = lazy(() =>
+  import("@/admin/pages/ReviewsAdminPage").then((m) => ({
+    default: m.ReviewsAdminPage,
+  })),
+);
+const ContactAdminPage = lazy(() =>
+  import("@/admin/pages/ContactAdminPage").then((m) => ({
+    default: m.ContactAdminPage,
+  })),
+);
+const EnquiriesPage = lazy(() =>
+  import("@/admin/pages/EnquiriesPage").then((m) => ({
+    default: m.EnquiriesPage,
+  })),
+);
+const AnalyticsPage = lazy(() =>
+  import("@/admin/pages/AnalyticsPage").then((m) => ({
+    default: m.AnalyticsPage,
+  })),
+);
+const FeaturedToursPage = lazy(() =>
+  import("@/admin/pages/FeaturedToursPage").then((m) => ({
+    default: m.FeaturedToursPage,
+  })),
+);
+const SiteHealthPage = lazy(() =>
+  import("@/admin/pages/SiteHealthPage").then((m) => ({
+    default: m.SiteHealthPage,
+  })),
+);
+
+function AdminPageWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <AdminLayout>
+      <Suspense
+        fallback={
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: 200,
+            }}
+          >
+            <div
+              className="admin-skeleton admin-skeleton--title"
+              style={{ width: 120 }}
+            />
+          </div>
+        }
+      >
+        {children}
+      </Suspense>
+    </AdminLayout>
+  );
+}
 
 import type { AudienceMode } from "@/sections/AudienceChooser";
 
@@ -197,97 +272,97 @@ export default function App() {
           <Route
             path="/admin"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <DashboardPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/tours"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <ToursAdminPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/tours/:id"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <TourEditPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/destinations"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <DestinationsAdminPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/gallery"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <GalleryAdminPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/content"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <ContentAdminPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/reviews"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <ReviewsAdminPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/contact"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <ContactAdminPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/enquiries"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <EnquiriesPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/analytics"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <AnalyticsPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/featured"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <FeaturedToursPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
           <Route
             path="/admin/health"
             element={
-              <AdminLayout>
+              <AdminPageWrapper>
                 <SiteHealthPage />
-              </AdminLayout>
+              </AdminPageWrapper>
             }
           />
         </Routes>

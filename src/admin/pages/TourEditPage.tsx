@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { tours as hardcodedTours } from "@/data/tours";
 import type { Tour, TourDay } from "@/data/tours";
+import { CharCounter } from "../components/CharCounter";
 
 const EMPTY_TOUR: Omit<Tour, "id"> = {
   name: "",
@@ -54,6 +55,7 @@ export function TourEditPage() {
     type: "success" | "error";
   } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [touched, setTouched] = useState<Set<string>>(new Set());
   const initialForm = useRef<string>("");
 
   useEffect(() => {
@@ -110,6 +112,22 @@ export function TourEditPage() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
+
+  // Inline validation
+  const markTouched = (field: string) =>
+    setTouched((prev) => new Set(prev).add(field));
+
+  const fieldError = (field: string): string | null => {
+    if (!touched.has(field)) return null;
+    if (field === "name" && !form.name.trim()) return "Tour name is required.";
+    if (field === "imageSlot" && !form.imageSlot.trim())
+      return "Image filename is required.";
+    if (field === "tagline") {
+      const words = form.tagline.split(/\s+/).filter(Boolean);
+      if (words.length > 12) return "Tagline should be 12 words or fewer.";
+    }
+    return null;
+  };
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -259,11 +277,22 @@ export function TourEditPage() {
                 <input
                   id="tour-name"
                   className="admin-input"
+                  style={
+                    fieldError("name")
+                      ? { borderColor: "var(--a-danger)" }
+                      : undefined
+                  }
                   value={form.name}
                   onChange={(e) => set("name", e.target.value)}
+                  onBlur={() => markTouched("name")}
                   placeholder="e.g. 7-Day Historic Tour — Lake Tana, Gondar, Lalibela"
                   required
                 />
+                {fieldError("name") && (
+                  <span className="admin-field__error">
+                    ⚠ {fieldError("name")}
+                  </span>
+                )}
               </div>
 
               <div className="admin-field">
@@ -441,6 +470,18 @@ export function TourEditPage() {
                     />
                   </div>
                   <div className="admin-field" style={{ marginBottom: 0 }}>
+                    <div className="admin-field__row">
+                      <label
+                        className="admin-label"
+                        style={{
+                          fontSize: "var(--a-text-xs)",
+                          color: "var(--a-muted)",
+                        }}
+                      >
+                        Description
+                      </label>
+                      <CharCounter value={day.description} max={500} />
+                    </div>
                     <textarea
                       className="admin-textarea"
                       value={day.description}
@@ -549,13 +590,24 @@ export function TourEditPage() {
                 <input
                   id="tour-image-slot"
                   className="admin-input"
+                  style={
+                    fieldError("imageSlot")
+                      ? { borderColor: "var(--a-danger)" }
+                      : undefined
+                  }
                   value={form.imageSlot}
                   onChange={(e) => set("imageSlot", e.target.value)}
+                  onBlur={() => markTouched("imageSlot")}
                   placeholder="e.g. Lalibela-Ethiopia-Tours-480.webp"
                 />
                 <span className="admin-input-hint">
                   File must exist in /public/media/tours/
                 </span>
+                {fieldError("imageSlot") && (
+                  <span className="admin-field__error">
+                    ⚠ {fieldError("imageSlot")}
+                  </span>
+                )}
               </div>
               <div className="admin-field">
                 <label className="admin-label" htmlFor="tour-image-alt">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logActivity } from "../lib/activityLog";
 
 interface Review {
   id: string;
@@ -137,6 +138,11 @@ export function ReviewsAdminPage() {
       }
     }
     await new Promise((res) => setTimeout(res, 400));
+    logActivity(
+      "Reviews saved",
+      "Updated review cards and ratings",
+      "/admin/reviews",
+    );
     showToast("Reviews saved (write to JSON to persist).", "success");
   };
 

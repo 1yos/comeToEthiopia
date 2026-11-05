@@ -15,6 +15,8 @@
 const PAGE_KEY = "cte-page-views";
 const TOUR_KEY = "cte-tour-clicks";
 const META_KEY = "cte-analytics";
+const REFERRER_KEY = "cte-referrers";
+const DEVICE_KEY = "cte-devices";
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
 // ── Track a page view ────────────────────────────────────────────────────────
@@ -28,6 +30,27 @@ export function trackPageView(path: string): void {
     const prev = (data[path] ?? []).filter((t) => t > cutoff);
     data[path] = [...prev, now];
     localStorage.setItem(PAGE_KEY, JSON.stringify(data));
+
+    // Track referrer
+    const referrer = document.referrer || "direct";
+    const refData: Record<string, number> = JSON.parse(
+      localStorage.getItem(REFERRER_KEY) ?? "{}",
+    );
+    const refKey =
+      referrer === "direct" ? "direct" : new URL(referrer).hostname;
+    refData[refKey] = (refData[refKey] ?? 0) + 1;
+    localStorage.setItem(REFERRER_KEY, JSON.stringify(refData));
+
+    // Track device type
+    const ua = navigator.userAgent;
+    const device = /Mobile|Android|iPhone|iPad|iPod/i.test(ua)
+      ? "mobile"
+      : "desktop";
+    const devData: Record<string, number> = JSON.parse(
+      localStorage.getItem(DEVICE_KEY) ?? "{}",
+    );
+    devData[device] = (devData[device] ?? 0) + 1;
+    localStorage.setItem(DEVICE_KEY, JSON.stringify(devData));
   } catch {
     /* ignore */
   }
@@ -75,11 +98,23 @@ export interface TourStat {
   clicks: number;
 }
 
+export interface ReferrerStat {
+  source: string;
+  count: number;
+}
+
+export interface DeviceStat {
+  device: string;
+  count: number;
+}
+
 export interface AnalyticsSummary {
   totalViews: number;
   last7Days: DailyViews[];
   topPages: PageStat[];
   topTours: TourStat[];
+  topReferrers: ReferrerStat[];
+  deviceSplit: DeviceStat[];
   enquiries: number;
   formStarts: number;
   conversionRate: number; // enquiries / formStarts * 100
@@ -193,6 +228,23 @@ export function getAnalytics(): AnalyticsSummary {
       .sort((a, b) => b.clicks - a.clicks)
       .slice(0, 5);
 
+    // Top referrers
+    const refData: Record<string, number> = JSON.parse(
+      localStorage.getItem(REFERRER_KEY) ?? "{}",
+    );
+    const topReferrers: ReferrerStat[] = Object.entries(refData)
+      .map(([source, count]) => ({ source, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // Device split
+    const devData: Record<string, number> = JSON.parse(
+      localStorage.getItem(DEVICE_KEY) ?? "{}",
+    );
+    const deviceSplit: DeviceStat[] = Object.entries(devData)
+      .map(([device, count]) => ({ device, count }))
+      .sort((a, b) => b.count - a.count);
+
     const enquiries = meta.enquiries ?? 0;
     const formStarts = meta.formStarts ?? 0;
     const conversionRate =
@@ -203,6 +255,8 @@ export function getAnalytics(): AnalyticsSummary {
       last7Days,
       topPages,
       topTours,
+      topReferrers,
+      deviceSplit,
       enquiries,
       formStarts,
       conversionRate,
@@ -216,6 +270,8 @@ export function getAnalytics(): AnalyticsSummary {
       })),
       topPages: [],
       topTours: [],
+      topReferrers: [],
+      deviceSplit: [],
       enquiries: 0,
       formStarts: 0,
       conversionRate: 0,

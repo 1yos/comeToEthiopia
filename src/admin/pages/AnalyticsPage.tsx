@@ -45,7 +45,8 @@ function BarChart({ data }: { data: { date: string; views: number }[] }) {
               style={{
                 width: "100%",
                 height: `${Math.max(pct, d.views > 0 ? 8 : 2)}%`,
-                backgroundColor: pct === 100 ? "var(--a-accent)" : "var(--a-sidebar)",
+                backgroundColor:
+                  pct === 100 ? "var(--a-accent)" : "var(--a-sidebar)",
                 opacity: pct === 100 ? 1 : 0.4 + (pct / 100) * 0.5,
                 transition: "height 0.4s ease",
               }}
@@ -353,6 +354,172 @@ export function AnalyticsPage() {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Referrers + Device split side by side */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 16,
+          marginTop: 16,
+        }}
+      >
+        {/* Top referrers */}
+        <div className="admin-card">
+          <div className="admin-card__title">Top referrers</div>
+          {stats.topReferrers.length === 0 ? (
+            <div
+              style={{
+                fontSize: "var(--a-text-sm)",
+                color: "var(--a-muted)",
+                fontStyle: "italic",
+                padding: "16px 0",
+              }}
+            >
+              No referrer data yet. Visit the site from different sources to
+              start tracking.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              {stats.topReferrers.map((ref, i) => {
+                const maxCount = stats.topReferrers[0]?.count ?? 1;
+                const pct = Math.round((ref.count / maxCount) * 100);
+                return (
+                  <div
+                    key={ref.source}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "clamp(80px, 10vw, 120px) 1fr clamp(28px, 4vw, 40px)",
+                      gap: "0 10px",
+                      alignItems: "center",
+                      padding: "8px 0",
+                      borderBottom:
+                        i < stats.topReferrers.length - 1
+                          ? "1px solid var(--a-border)"
+                          : "none",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "var(--a-text-sm)",
+                        color: "var(--a-text-secondary)",
+                      }}
+                    >
+                      {ref.source}
+                    </span>
+                    <div
+                      style={{
+                        height: 6,
+                        backgroundColor: "var(--a-bg-subtle)",
+                        position: "relative",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: `${pct}%`,
+                          backgroundColor:
+                            i === 0 ? "var(--a-accent)" : "var(--a-info)",
+                          opacity: i === 0 ? 1 : 0.5,
+                        }}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "var(--a-text-xs)",
+                        color: "var(--a-muted)",
+                        textAlign: "right",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {ref.count}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Device split */}
+        <div className="admin-card">
+          <div className="admin-card__title">Device split</div>
+          {stats.deviceSplit.length === 0 ? (
+            <div
+              style={{
+                fontSize: "var(--a-text-sm)",
+                color: "var(--a-muted)",
+                fontStyle: "italic",
+                padding: "16px 0",
+              }}
+            >
+              No device data yet.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {stats.deviceSplit.map((dev) => {
+                const total = stats.deviceSplit.reduce(
+                  (sum, d) => sum + d.count,
+                  0,
+                );
+                const pct =
+                  total > 0 ? Math.round((dev.count / total) * 100) : 0;
+                return (
+                  <div key={dev.device}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: 4,
+                        fontSize: "var(--a-text-sm)",
+                        color: "var(--a-text)",
+                      }}
+                    >
+                      <span style={{ textTransform: "capitalize" }}>
+                        {dev.device}
+                      </span>
+                      <span
+                        style={{
+                          color: "var(--a-muted)",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {dev.count} ({pct}%)
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        height: 6,
+                        backgroundColor: "var(--a-bg-subtle)",
+                        borderRadius: "var(--a-radius-full)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${pct}%`,
+                          backgroundColor:
+                            dev.device === "mobile"
+                              ? "var(--a-accent)"
+                              : "var(--a-info)",
+                          borderRadius: "var(--a-radius-full)",
+                          transition: "width 0.4s ease",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

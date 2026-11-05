@@ -9,6 +9,8 @@ import {
   type Enquiry,
 } from "../lib/enquiries";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { useDebounce } from "../hooks/useDebounce";
+import { logActivity } from "../lib/activityLog";
 
 const STATUS_LABELS: Record<Enquiry["status"], string> = {
   new: "New",
@@ -66,6 +68,7 @@ export function EnquiriesPage() {
   const [selected, setSelected] = useState<Enquiry | null>(null);
   const [filter, setFilter] = useState<"all" | Enquiry["status"]>("all");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 200);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -97,6 +100,11 @@ export function EnquiriesPage() {
     if (selected?.id === id)
       setSelected((prev) => (prev ? { ...prev, status } : null));
     showToast(`Marked as ${STATUS_LABELS[status]}.`, "success");
+    logActivity(
+      "Enquiry status changed",
+      `${STATUS_LABELS[status]}`,
+      "/admin/enquiries",
+    );
   };
 
   const handleDelete = () => {
@@ -105,6 +113,7 @@ export function EnquiriesPage() {
     load();
     if (selected?.id === confirmDelete.id) setSelected(null);
     setConfirmDelete(null);
+    logActivity("Enquiry deleted", confirmDelete.name, "/admin/enquiries");
     showToast("Enquiry deleted.", "success");
   };
 
@@ -145,13 +154,14 @@ export function EnquiriesPage() {
   const filtered = enquiries.filter((e) => {
     const matchFilter = filter === "all" || e.status === filter;
     const matchSearch =
-      search === "" ||
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.email.toLowerCase().includes(search.toLowerCase()) ||
+      debouncedSearch === "" ||
+      e.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      e.email.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       e.selectedTourNames.some((t) =>
-        t.toLowerCase().includes(search.toLowerCase()),
+        t.toLowerCase().includes(debouncedSearch.toLowerCase()),
       ) ||
-      (e.tourFreeText?.toLowerCase().includes(search.toLowerCase()) ?? false);
+      (e.tourFreeText?.toLowerCase().includes(debouncedSearch.toLowerCase()) ??
+        false);
     return matchFilter && matchSearch;
   });
 

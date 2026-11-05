@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { getUnreadCount, getEnquiries, type Enquiry } from "../lib/enquiries";
 import { CommandPalette } from "./CommandPalette";
+import { SessionWarning } from "./SessionWarning";
 
 /* ── Icons ──────────────────────────────────────────────────────────────── */
 const Icon = ({ d, size = 16 }: { d: string; size?: number }) => (
@@ -223,6 +224,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       return false;
     }
   });
+  const [compact, setCompact] = useState(() => {
+    try {
+      return localStorage.getItem("cte-admin-density") === "compact";
+    } catch {
+      return false;
+    }
+  });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -256,6 +264,18 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       /* ignore */
     }
   }, [collapsed]);
+
+  // Density persistence
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "cte-admin-density",
+        compact ? "compact" : "comfortable",
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [compact]);
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -296,6 +316,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     "cte-admin admin-shell",
     collapsed ? "admin-shell--collapsed" : "",
     mobileOpen ? "admin-shell--mobile-open" : "",
+    compact ? "admin-shell--compact" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -485,6 +506,40 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             )}
           </button>
 
+          {/* Density toggle */}
+          <button
+            className="admin-theme-toggle"
+            onClick={() => setCompact((p) => !p)}
+            aria-label={
+              compact
+                ? "Switch to comfortable density"
+                : "Switch to compact density"
+            }
+            title={compact ? "Comfortable density" : "Compact density"}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            >
+              {compact ? (
+                <>
+                  <rect x="2" y="3" width="12" height="10" rx="1" />
+                  <path d="M2 7h12M2 10h12" />
+                </>
+              ) : (
+                <>
+                  <rect x="2" y="2" width="12" height="12" rx="1" />
+                  <path d="M2 6h12M2 10h12" />
+                </>
+              )}
+            </svg>
+          </button>
+
           {/* View site */}
           <a
             href="/"
@@ -587,6 +642,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
       {/* ── Command palette ── */}
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
+
+      {/* ── Session expiry warning ── */}
+      <SessionWarning />
     </div>
   );
 }

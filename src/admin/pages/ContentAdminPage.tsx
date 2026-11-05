@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { siteContent } from "@/data/content";
+import { logActivity } from "../lib/activityLog";
 
 function Toast({
   message,
@@ -13,6 +14,35 @@ function Toast({
       {message}
     </div>
   );
+}
+
+const VERSION_KEY = "cte-content-versions";
+const MAX_VERSIONS = 10;
+
+interface ContentVersion {
+  id: string;
+  timestamp: string;
+  heroTagline: string;
+  heroSubline: string;
+  footerTagline: string;
+  footerMadeIn: string;
+  aboutDesc: string;
+}
+
+function loadVersions(): ContentVersion[] {
+  try {
+    return JSON.parse(localStorage.getItem(VERSION_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveVersions(versions: ContentVersion[]): void {
+  try {
+    localStorage.setItem(VERSION_KEY, JSON.stringify(versions));
+  } catch {
+    /* ignore */
+  }
 }
 
 export function ContentAdminPage() {
@@ -41,17 +71,47 @@ export function ContentAdminPage() {
   const [aboutDesc, setAboutDesc] = useState(
     "Come to Ethiopia Tours is owned and operated by a single professional Ethiopian guide based in Addis Ababa. No resellers. No middlemen.",
   );
+  const [versions, setVersions] = useState<ContentVersion[]>(loadVersions);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
+  const createSnapshot = (): ContentVersion => ({
+    id: Date.now().toString(),
+    timestamp: new Date().toISOString(),
+    heroTagline,
+    heroSubline,
+    footerTagline,
+    footerMadeIn,
+    aboutDesc,
+  });
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Phase 2: write to /public/cms/content.json
+    // Save snapshot to version history
+    const snapshot = createSnapshot();
+    const updated = [snapshot, ...versions].slice(0, MAX_VERSIONS);
+    setVersions(updated);
+    saveVersions(updated);
+
     await new Promise((r) => setTimeout(r, 400));
-    showToast("Content saved (write to JSON to persist).", "success");
+    logActivity(
+      "Content saved",
+      "Updated hero, footer, and About page text",
+      "/admin/content",
+    );
+    showToast("Content saved. Version stored in history.", "success");
+  };
+
+  const restoreVersion = (version: ContentVersion) => {
+    setHeroTagline(version.heroTagline);
+    setHeroSubline(version.heroSubline);
+    setFooterTagline(version.footerTagline);
+    setFooterMadeIn(version.footerMadeIn);
+    setAboutDesc(version.aboutDesc);
+    showToast("Version restored. Save to persist changes.", "success");
   };
 
   return (
@@ -163,6 +223,39 @@ export function ContentAdminPage() {
           </div>
         </div>
       </form>
+
+      {/* Version history */}
+      {versions.length > 0 && (
+        <div className="admin-card" style={{ marginTop: 16 }}>
+          <div className="admin-card__title">Version history</div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {versions.map((v) => (
+              <div key={v.id} className="admin-version-item">
+                <div className="admin-version-item__info">
+                  <div className="admin-version-item__time">
+                    {new Date(v.timestamp).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                  <div className="admin-version-item__detail">
+                    Hero: "{v.heroTagline.slice(0, 40)}
+                    {v.heroTagline.length > 40 ? "…" : ""}"
+                  </div>
+                </div>
+                <button
+                  className="admin-btn admin-btn--secondary admin-btn--sm"
+                  onClick={() => restoreVersion(v)}
+                >
+                  Restore
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} />}
     </div>

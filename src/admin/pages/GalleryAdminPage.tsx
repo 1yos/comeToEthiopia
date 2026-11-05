@@ -111,6 +111,8 @@ export function GalleryAdminPage() {
   const [items, setItems] = useState<GalleryItem[]>(INITIAL);
   const [editing, setEditing] = useState<GalleryItem | null>(null);
   const [adding, setAdding] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number[]>([]);
   const [newItem, setNewItem] = useState<Partial<GalleryItem>>({
     category: "landscape",
   });
@@ -161,6 +163,50 @@ export function GalleryAdminPage() {
     showToast("Photo added to gallery.", "success");
   };
 
+  const handleDrop = async (files: FileList) => {
+    const imageFiles = Array.from(files).filter((f) =>
+      f.type.startsWith("image/"),
+    );
+    if (imageFiles.length === 0) {
+      showToast("Please drop image files only.", "error");
+      return;
+    }
+
+    setUploadProgress(imageFiles.map(() => 0));
+
+    for (let i = 0; i < imageFiles.length; i++) {
+      const file = imageFiles[i];
+      const caption = file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
+
+      // Simulate progress
+      for (let pct = 0; pct <= 100; pct += 25) {
+        setUploadProgress((prev) => {
+          const next = [...prev];
+          if (next[i] !== undefined) next[i] = pct;
+          return next;
+        });
+        await new Promise((r) => setTimeout(r, 80));
+      }
+
+      const item: GalleryItem = {
+        id: Date.now().toString() + i,
+        src: URL.createObjectURL(file),
+        alt: caption,
+        caption,
+        region: "Uploaded",
+        category: "landscape",
+      };
+      setItems((prev) => [item, ...prev]);
+    }
+
+    setUploadProgress([]);
+    setDragActive(false);
+    showToast(
+      `${imageFiles.length} photo${imageFiles.length === 1 ? "" : "s"} added.`,
+      "success",
+    );
+  };
+
   return (
     <div>
       <div className="admin-section-header">
@@ -179,6 +225,107 @@ export function GalleryAdminPage() {
           </button>
         </div>
       </div>
+
+      {/* Drag-and-drop zone */}
+      <div
+        className={`admin-dropzone${dragActive ? " admin-dropzone--active" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }}
+        onDragLeave={() => setDragActive(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragActive(false);
+          if (e.dataTransfer.files.length > 0) handleDrop(e.dataTransfer.files);
+        }}
+        onClick={() => {
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = "image/*";
+          input.multiple = true;
+          input.onchange = (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (files && files.length > 0) handleDrop(files);
+          };
+          input.click();
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Drop images here or click to upload"
+      >
+        <svg
+          className="admin-dropzone__icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 16V4M7 9l5-5 5 5M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+        </svg>
+        <div className="admin-dropzone__text">
+          {dragActive
+            ? "Drop images here…"
+            : "Drag and drop images, or click to browse"}
+        </div>
+        <div className="admin-dropzone__hint">
+          Files are previewed locally. Copy them to /public/media/ for
+          production.
+        </div>
+      </div>
+
+      {/* Upload progress bars */}
+      {uploadProgress.length > 0 && (
+        <div
+          className="admin-card"
+          style={{ marginBottom: 16, padding: "12px 16px" }}
+        >
+          {uploadProgress.map((pct, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                margin: "6px 0",
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  height: 4,
+                  backgroundColor: "var(--a-bg-subtle)",
+                  borderRadius: "var(--a-radius-full)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${pct}%`,
+                    backgroundColor: "var(--a-accent)",
+                    borderRadius: "var(--a-radius-full)",
+                    transition: "width 0.1s ease",
+                  }}
+                />
+              </div>
+              <span
+                style={{
+                  fontSize: "var(--a-text-xs)",
+                  color: "var(--a-muted)",
+                  minWidth: 30,
+                  textAlign: "right",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {pct}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Add photo form */}
       {adding && (

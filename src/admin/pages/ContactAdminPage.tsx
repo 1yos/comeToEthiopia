@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { siteContent } from "@/data/content";
+import { logActivity } from "../lib/activityLog";
 
 function Toast({
   message,
@@ -46,6 +47,11 @@ export function ContactAdminPage() {
       return;
     }
     await new Promise((r) => setTimeout(r, 400));
+    logActivity(
+      "Contact details saved",
+      "Updated phone, email, and social links",
+      "/admin/contact",
+    );
     showToast("Contact details saved (write to JSON to persist).", "success");
   };
 
