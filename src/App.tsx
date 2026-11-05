@@ -24,6 +24,7 @@ import { PlanPage } from "@/pages/PlanPage";
 import { AboutPage } from "@/pages/AboutPage";
 import { CulturePage } from "@/pages/CulturePage";
 import { GalleryPage } from "@/pages/GalleryPage";
+import { TravelerInfoPage } from "@/pages/TravelerInfoPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
 // Admin panel
@@ -174,6 +175,12 @@ export default function App() {
 
             {/* Culture & language */}
             <Route path="/culture" element={<CulturePage />} />
+
+            {/* Traveler info */}
+            <Route
+              path="/traveler-info"
+              element={<TravelerInfoPage audience={audience} />}
+            />
 
             {/* Plan your trip */}
             <Route path="/plan" element={<PlanPage audience={audience} />} />

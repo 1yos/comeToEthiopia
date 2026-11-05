@@ -438,6 +438,31 @@ export function PlanPage({ audience }: PlanPageProps) {
             </div>
           </div>
 
+          {/* Before You Fly link */}
+          <Link
+            to="/traveler-info"
+            style={{
+              position: "relative",
+              zIndex: 1,
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              color: "var(--ochre)",
+              textDecoration: "none",
+              cursor: "none",
+              opacity: 0.8,
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLElement).style.opacity = "1")
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLElement).style.opacity = "0.8")
+            }
+          >
+            Before you fly — practical info →
+          </Link>
+
           {/* Bottom: Ethiopian date */}
           <div
             style={{
