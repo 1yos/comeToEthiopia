@@ -5,166 +5,163 @@ import { destinations } from "@/data/destinations";
 import { getEnquiries, getUnreadCount, type Enquiry } from "../lib/enquiries";
 import { getAnalytics, type AnalyticsSummary } from "../lib/analytics";
 
-// ── Smooth area chart ─────────────────────────────────────────────────────────
+// ── SVG Area Chart ────────────────────────────────────────────────────────────
 function AreaChart({
   data,
   labels,
-  height = 180,
-  color = "var(--ochre)",
+  height = 160,
+  lineColor = "var(--ochre)",
 }: {
   data: number[];
   labels: string[];
   height?: number;
-  color?: string;
+  lineColor?: string;
 }) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [svgWidth, setSvgWidth] = useState(800);
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(600);
+  const [hover, setHover] = useState<number | null>(null);
 
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
     const obs = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect.width;
-      if (w) setSvgWidth(w);
+      if (w > 0) setWidth(w);
     });
-    if (svgRef.current?.parentElement)
-      obs.observe(svgRef.current.parentElement);
+    obs.observe(el);
     return () => obs.disconnect();
   }, []);
 
-  const max = Math.max(...data, 1);
-  const padT = 16;
-  const padB = 28;
-  const padL = 8;
-  const padR = 8;
-  const chartW = svgWidth - padL - padR;
-  const chartH = height - padT - padB;
   const n = data.length;
+  const max = Math.max(...data, 1);
+  const pT = 16,
+    pB = 24,
+    pL = 4,
+    pR = 4;
+  const cW = width - pL - pR;
+  const cH = height - pT - pB;
 
-  const px = (i: number) => padL + (i / (n - 1)) * chartW;
-  const py = (v: number) => padT + chartH - (v / max) * chartH;
+  const x = (i: number) => pL + (i / (n - 1)) * cW;
+  const y = (v: number) => pT + cH - (v / max) * cH;
 
-  // Smooth bezier path
-  const linePath = data.reduce((acc, v, i) => {
-    if (i === 0) return `M ${px(i)},${py(v)}`;
-    const x0 = px(i - 1),
-      y0 = py(data[i - 1]);
-    const x1 = px(i),
-      y1 = py(v);
-    const cpx = (x0 + x1) / 2;
-    return `${acc} C ${cpx},${y0} ${cpx},${y1} ${x1},${y1}`;
+  const line = data.reduce((acc, v, i) => {
+    if (i === 0) return `M ${x(i)},${y(v)}`;
+    const px0 = x(i - 1),
+      py0 = y(data[i - 1]);
+    const px1 = x(i),
+      py1 = y(v);
+    const cp = (px0 + px1) / 2;
+    return `${acc} C ${cp},${py0} ${cp},${py1} ${px1},${py1}`;
   }, "");
 
-  const areaPath = `${linePath} L ${px(n - 1)},${padT + chartH} L ${px(0)},${padT + chartH} Z`;
+  const area = `${line} L ${x(n - 1)},${pT + cH} L ${x(0)},${pT + cH} Z`;
 
   return (
-    <div style={{ position: "relative", width: "100%" }}>
+    <div ref={containerRef} style={{ width: "100%", position: "relative" }}>
       <svg
-        ref={svgRef}
         width="100%"
         height={height}
-        viewBox={`0 0 ${svgWidth} ${height}`}
+        viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
-        aria-label="Page views chart"
         style={{ display: "block", overflow: "visible" }}
       >
         <defs>
-          <linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.22" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          <linearGradient id="cte-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0.15" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {/* Horizontal grid lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+        {/* Grid lines */}
+        {[0, 0.33, 0.66, 1].map((f) => (
           <line
             key={f}
-            x1={padL}
-            x2={svgWidth - padR}
-            y1={padT + chartH * (1 - f)}
-            y2={padT + chartH * (1 - f)}
-            stroke="rgba(18,17,16,0.06)"
+            x1={pL}
+            x2={width - pR}
+            y1={pT + cH * (1 - f)}
+            y2={pT + cH * (1 - f)}
+            stroke="rgba(17,17,16,0.06)"
             strokeWidth={1}
           />
         ))}
 
-        {/* Area fill */}
-        <path d={areaPath} fill="url(#area-fill)" />
+        {/* Area */}
+        <path d={area} fill="url(#cte-grad)" />
 
         {/* Line */}
         <path
-          d={linePath}
+          d={line}
           fill="none"
-          stroke={color}
-          strokeWidth={2.5}
+          stroke={lineColor}
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
-        {/* Data points + hover targets */}
+        {/* Points + hover */}
         {data.map((v, i) => (
           <g key={i}>
-            {/* Invisible wide hit area */}
             <rect
-              x={padL + (i / (n - 1)) * chartW - 20}
-              y={padT}
-              width={40}
-              height={chartH}
+              x={x(i) - 24}
+              y={pT}
+              width={48}
+              height={cH}
               fill="transparent"
-              onMouseEnter={() => setHoverIndex(i)}
-              onMouseLeave={() => setHoverIndex(null)}
-              style={{ cursor: "default" }}
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(null)}
             />
             {/* Dot */}
-            <circle
-              cx={px(i)}
-              cy={py(v)}
-              r={hoverIndex === i ? 5 : v > 0 ? 3 : 0}
-              fill={color}
-              style={{ transition: "r 0.15s ease" }}
-            />
-            {/* Vertical hover line */}
-            {hoverIndex === i && (
-              <line
-                x1={px(i)}
-                x2={px(i)}
-                y1={padT}
-                y2={padT + chartH}
-                stroke={color}
-                strokeWidth={1}
-                strokeDasharray="3 3"
-                opacity={0.4}
+            {(hover === i || v > 0) && (
+              <circle
+                cx={x(i)}
+                cy={y(v)}
+                r={hover === i ? 5 : 3}
+                fill={hover === i ? lineColor : "white"}
+                stroke={lineColor}
+                strokeWidth={2}
+                style={{ transition: "r 0.12s" }}
               />
             )}
             {/* Hover tooltip */}
-            {hoverIndex === i && (
-              <g>
+            {hover === i && (
+              <>
+                <line
+                  x1={x(i)}
+                  x2={x(i)}
+                  y1={pT}
+                  y2={pT + cH}
+                  stroke={lineColor}
+                  strokeWidth={1}
+                  strokeDasharray="3 3"
+                  opacity={0.35}
+                />
                 <rect
-                  x={Math.min(Math.max(px(i) - 22, padL), svgWidth - padR - 44)}
-                  y={py(v) - 28}
-                  width={44}
-                  height={20}
-                  fill="var(--ink)"
-                  rx={2}
+                  x={Math.min(Math.max(x(i) - 20, pL), width - pR - 40)}
+                  y={y(v) - 30}
+                  width={40}
+                  height={22}
+                  fill="var(--a-text)"
+                  rx={4}
                 />
                 <text
-                  x={Math.min(Math.max(px(i), padL + 22), svgWidth - padR - 22)}
-                  y={py(v) - 14}
+                  x={Math.min(Math.max(x(i), pL + 20), width - pR - 20)}
+                  y={y(v) - 14}
                   textAnchor="middle"
                   fill="white"
                   fontSize={11}
                   fontFamily="var(--font-body)"
+                  fontWeight="600"
                 >
                   {v}
                 </text>
-              </g>
+              </>
             )}
             {/* Day label */}
             <text
-              x={px(i)}
+              x={x(i)}
               y={height - 4}
               textAnchor="middle"
-              fill="var(--ink)"
-              opacity={0.35}
+              fill="var(--a-muted)"
               fontSize={10}
               fontFamily="var(--font-body)"
             >
@@ -178,104 +175,79 @@ function AreaChart({
 }
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
-function StatCard({
+function KpiCard({
   label,
   value,
   sub,
-  accent,
+  accentColor,
   href,
-  large = false,
 }: {
   label: string;
   value: string | number;
   sub?: string;
-  accent: string;
+  accentColor: string;
   href: string;
-  large?: boolean;
 }) {
   return (
-    <Link
-      to={href}
-      style={{
-        textDecoration: "none",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "white",
-        border: "1px solid rgba(18,17,16,0.07)",
-        padding: large ? "28px 28px 24px" : "22px 22px 18px",
-        gap: 8,
-        transition:
-          "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
-        cursor: "pointer",
-      }}
-      onMouseEnter={(e) => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.transform = "translateY(-2px)";
-        el.style.boxShadow = "0 8px 32px rgba(18,17,16,0.10)";
-        el.style.borderColor = accent;
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.transform = "translateY(0)";
-        el.style.boxShadow = "none";
-        el.style.borderColor = "rgba(18,17,16,0.07)";
-      }}
-    >
-      {/* Top accent bar */}
+    <Link to={href} style={{ textDecoration: "none", display: "block" }}>
       <div
         style={{
-          width: 32,
-          height: 3,
-          backgroundColor: accent,
-          marginBottom: 4,
+          backgroundColor: "var(--a-surface)",
+          border: "1px solid var(--a-border)",
+          borderRadius: "var(--a-radius)",
+          borderTop: `3px solid ${accentColor}`,
+          padding: "18px 20px 16px",
+          boxShadow: "var(--a-shadow-sm)",
+          transition: "box-shadow 0.18s, transform 0.18s",
         }}
-        aria-hidden="true"
-      />
-
-      {/* Label */}
-      <div
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 9,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "var(--ink)",
-          opacity: 0.45,
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.boxShadow = "var(--a-shadow)";
+          (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.boxShadow =
+            "var(--a-shadow-sm)";
+          (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
         }}
       >
-        {label}
-      </div>
-
-      {/* Value */}
-      <div
-        style={{
-          fontFamily: "var(--font-display)",
-          fontVariationSettings: '"opsz" 72, "wght" 800',
-          fontSize: large
-            ? "clamp(2.8rem, 4vw, 4rem)"
-            : "clamp(2rem, 3vw, 3rem)",
-          color: "var(--ink)",
-          lineHeight: 1,
-          letterSpacing: "-0.04em",
-        }}
-      >
-        {value}
-      </div>
-
-      {/* Sub */}
-      {sub && (
         <div
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 11,
-            color: "var(--ink)",
-            opacity: 0.38,
-            marginTop: 2,
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--a-muted)",
+            marginBottom: 10,
           }}
         >
-          {sub}
+          {label}
         </div>
-      )}
+        <div
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "clamp(1.6rem, 2.5vw, 2.2rem)",
+            fontWeight: 800,
+            color: "var(--a-text)",
+            letterSpacing: "-0.04em",
+            lineHeight: 1,
+            marginBottom: sub ? 6 : 0,
+          }}
+        >
+          {value}
+        </div>
+        {sub && (
+          <div
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              color: "var(--a-muted)",
+            }}
+          >
+            {sub}
+          </div>
+        )}
+      </div>
     </Link>
   );
 }
@@ -285,27 +257,27 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
   const ago = (iso: string) => {
     const s = (Date.now() - new Date(iso).getTime()) / 1000;
     if (s < 60) return "just now";
-    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-    return `${Math.floor(s / 86400)}d ago`;
+    if (s < 3600) return `${Math.floor(s / 60)}m`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h`;
+    return `${Math.floor(s / 86400)}d`;
   };
+
+  const avatarBg = enq.status === "new" ? "var(--ochre)" : "var(--a-sidebar)";
 
   return (
     <Link
       to="/admin/enquiries"
       style={{
-        display: "grid",
-        gridTemplateColumns: "36px 1fr auto",
+        display: "flex",
         alignItems: "center",
         gap: 12,
-        padding: "12px 0",
-        borderBottom: "1px solid rgba(18,17,16,0.05)",
+        padding: "10px 0",
+        borderBottom: "1px solid var(--a-border)",
         textDecoration: "none",
-        transition: "background-color 0.15s",
+        transition: "background-color 0.12s",
       }}
       onMouseEnter={(e) =>
-        ((e.currentTarget as HTMLElement).style.backgroundColor =
-          "rgba(18,17,16,0.02)")
+        ((e.currentTarget as HTMLElement).style.backgroundColor = "var(--a-bg)")
       }
       onMouseLeave={(e) =>
         ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")
@@ -313,16 +285,16 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
     >
       <div
         style={{
-          width: 36,
-          height: 36,
-          backgroundColor:
-            enq.status === "new" ? "var(--ochre)" : "var(--indigo)",
-          color: "var(--paper)",
+          width: 32,
+          height: 32,
+          borderRadius: "50%",
+          backgroundColor: avatarBg,
+          color: "white",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "var(--font-body)",
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: 700,
           flexShrink: 0,
         }}
@@ -330,13 +302,13 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
       >
         {enq.name.slice(0, 2).toUpperCase()}
       </div>
-      <div style={{ minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 13,
-            color: "var(--ink)",
             fontWeight: enq.status === "new" ? 600 : 400,
+            color: "var(--a-text)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -348,12 +320,11 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 11,
-            color: "var(--ink)",
-            opacity: 0.4,
+            color: "var(--a-muted)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
-            marginTop: 2,
+            marginTop: 1,
           }}
         >
           {enq.selectedTourNames[0] ?? enq.tourFreeText ?? "No specific tour"}
@@ -362,29 +333,38 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
         </div>
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <div
+        <span
           style={{
+            display: "inline-block",
             fontFamily: "var(--font-body)",
             fontSize: 9,
-            letterSpacing: "0.1em",
+            fontWeight: 600,
+            letterSpacing: "0.06em",
             textTransform: "uppercase",
             color:
               enq.status === "new"
                 ? "var(--ochre)"
                 : enq.status === "replied"
-                  ? "var(--highland)"
-                  : "rgba(18,17,16,0.3)",
+                  ? "var(--a-success)"
+                  : "var(--a-muted)",
+            backgroundColor:
+              enq.status === "new"
+                ? "var(--a-accent-bg)"
+                : enq.status === "replied"
+                  ? "var(--a-success-bg)"
+                  : "transparent",
+            padding: "2px 6px",
+            borderRadius: "20px",
             marginBottom: 3,
           }}
         >
           {enq.status}
-        </div>
+        </span>
         <div
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 10,
-            color: "var(--ink)",
-            opacity: 0.28,
+            color: "var(--a-faint)",
           }}
         >
           {ago(enq.timestamp)}
@@ -401,15 +381,13 @@ export function DashboardPage() {
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    setStats(getAnalytics());
-    const all = getEnquiries();
-    setEnquiries(all);
-    setUnread(getUnreadCount());
-    const iv = setInterval(() => {
+    const refresh = () => {
       setStats(getAnalytics());
       setEnquiries(getEnquiries());
       setUnread(getUnreadCount());
-    }, 20000);
+    };
+    refresh();
+    const iv = setInterval(refresh, 20000);
     return () => clearInterval(iv);
   }, []);
 
@@ -425,6 +403,7 @@ export function DashboardPage() {
   ];
   const totalViews = stats?.totalViews ?? 0;
   const todayViews = viewData[viewData.length - 1] ?? 0;
+  const convRate = stats?.conversionRate ?? 0;
 
   const today = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
@@ -434,308 +413,133 @@ export function DashboardPage() {
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      {/* ── Dark hero header ── */}
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* ── Page header ── */}
       <div
         style={{
-          backgroundColor: "var(--indigo)",
-          margin: "-32px -32px 32px",
-          padding: "36px 32px 40px",
-          position: "relative",
-          overflow: "hidden",
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
         }}
       >
-        {/* Ghost Ge'ez watermark */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            right: -24,
-            top: -20,
-            fontFamily: "var(--font-geez)",
-            fontSize: 160,
-            lineHeight: 1,
-            color: "var(--paper)",
-            opacity: 0.04,
-            userSelect: "none",
-            pointerEvents: "none",
-          }}
-        >
-          ፊደል {/* TODO-REVIEW */}
+        <div>
+          <h1 className="admin-page-title">Dashboard</h1>
+          <p className="admin-page-sub">{today}</p>
         </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                marginBottom: 8,
-              }}
-            >
-              <span
-                style={{
-                  width: 20,
-                  height: 1,
-                  backgroundColor: "var(--ochre)",
-                  display: "block",
-                }}
-                aria-hidden="true"
-              />
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 9,
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: "var(--ochre)",
-                  opacity: 0.8,
-                }}
-              >
-                Come to Ethiopia Tours
-              </span>
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--font-display)",
-                fontVariationSettings: '"opsz" 72, "wght" 700',
-                fontSize: "clamp(1.8rem, 3vw, 2.8rem)",
-                color: "var(--paper)",
-                lineHeight: 1.0,
-                letterSpacing: "-0.025em",
-                marginBottom: 8,
-              }}
-            >
-              Dashboard
-            </h1>
-            <p
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 12,
-                color: "var(--paper)",
-                opacity: 0.4,
-              }}
-            >
-              {today}
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {unread > 0 && (
-              <Link
-                to="/admin/enquiries"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--ink)",
-                  backgroundColor: "var(--ochre)",
-                  padding: "8px 16px",
-                  textDecoration: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <span
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    backgroundColor: "var(--ink)",
-                    display: "inline-block",
-                  }}
-                  aria-hidden="true"
-                />
-                {unread} new {unread === 1 ? "enquiry" : "enquiries"}
-              </Link>
-            )}
-            <a
-              href="/"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "var(--paper)",
-                border: "1px solid rgba(241,234,217,0.25)",
-                padding: "8px 16px",
-                textDecoration: "none",
-                transition: "border-color 0.2s",
-              }}
-              onMouseEnter={(e) =>
-                ((e.currentTarget as HTMLElement).style.borderColor =
-                  "var(--ochre)")
-              }
-              onMouseLeave={(e) =>
-                ((e.currentTarget as HTMLElement).style.borderColor =
-                  "rgba(241,234,217,0.25)")
-              }
-            >
-              View site →
-            </a>
-          </div>
-        </div>
-
-        {/* Hero stat row — sits inside the dark header */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-            gap: 2,
-            marginTop: 32,
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          {[
-            {
-              label: "Page views",
-              value: totalViews,
-              sub: `${todayViews} today`,
-              accent: "var(--ochre)",
-            },
-            {
-              label: "Enquiries",
-              value: enquiries.length,
-              sub: unread > 0 ? `${unread} unread` : "All read",
-              accent: "var(--highland)",
-            },
-            {
-              label: "Tours",
-              value: tours.length,
-              sub: `${tours.filter((t) => t.difficulty === "easy").length} easy · ${tours.filter((t) => t.difficulty === "moderate").length} mod`,
-              accent: "rgba(241,234,217,0.5)",
-            },
-            {
-              label: "Destinations",
-              value: destinations.length,
-              sub: `${destinations.filter((d) => d.featured).length} featured`,
-              accent: "var(--sulphur)",
-            },
-            {
-              label: "Conversion",
-              value: `${stats?.conversionRate ?? 0}%`,
-              sub: `${stats?.formStarts ?? 0} starts`,
-              accent: "var(--ochre)",
-            },
-          ].map((s) => (
-            <div
-              key={s.label}
-              style={{
-                backgroundColor: "rgba(241,234,217,0.06)",
-                padding: "16px 18px",
-                borderLeft: `3px solid ${s.accent}`,
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 8,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "var(--paper)",
-                  opacity: 0.45,
-                  marginBottom: 8,
-                }}
-              >
-                {s.label}
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontVariationSettings: '"opsz" 72, "wght" 800',
-                  fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)",
-                  color: "var(--paper)",
-                  lineHeight: 1,
-                  letterSpacing: "-0.04em",
-                }}
-              >
-                {s.value}
-              </div>
-              {s.sub && (
-                <div
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 10,
-                    color: "var(--paper)",
-                    opacity: 0.35,
-                    marginTop: 5,
-                  }}
-                >
-                  {s.sub}
-                </div>
-              )}
-            </div>
-          ))}
+        <div style={{ display: "flex", gap: 8 }}>
+          {unread > 0 && (
+            <Link to="/admin/enquiries" className="admin-btn admin-btn--accent">
+              {unread} new {unread === 1 ? "enquiry" : "enquiries"}
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* ── Main grid ── */}
+      {/* ── KPI row ── */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr clamp(300px, 32%, 380px)",
+          gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+          gap: 12,
+        }}
+      >
+        <KpiCard
+          label="Page views"
+          value={totalViews}
+          sub={todayViews > 0 ? `+${todayViews} today` : "No views today"}
+          accentColor="var(--ochre)"
+          href="/admin/analytics"
+        />
+        <KpiCard
+          label="Enquiries"
+          value={enquiries.length}
+          sub={unread > 0 ? `${unread} unread` : "All read"}
+          accentColor="var(--highland)"
+          href="/admin/enquiries"
+        />
+        <KpiCard
+          label="Tours"
+          value={tours.length}
+          sub={`${tours.filter((t) => t.difficulty === "easy").length} easy · ${tours.filter((t) => t.difficulty === "moderate").length} mod`}
+          accentColor="var(--indigo)"
+          href="/admin/tours"
+        />
+        <KpiCard
+          label="Destinations"
+          value={destinations.length}
+          sub={`${destinations.filter((d) => d.featured).length} on map`}
+          accentColor="var(--sulphur)"
+          href="/admin/destinations"
+        />
+        <KpiCard
+          label="Conversion"
+          value={`${convRate}%`}
+          sub={`${stats?.formStarts ?? 0} form starts`}
+          accentColor="var(--ochre)"
+          href="/admin/analytics"
+        />
+      </div>
+
+      {/* ── Two-column grid ── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr clamp(290px, 30%, 340px)",
           gap: 20,
           alignItems: "start",
         }}
       >
-        {/* ── Left column ── */}
+        {/* ── Left ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Analytics chart card */}
+          {/* Chart card */}
           <div
             style={{
-              backgroundColor: "white",
-              border: "1px solid rgba(18,17,16,0.07)",
-              padding: "24px 28px 20px",
+              backgroundColor: "var(--a-surface)",
+              border: "1px solid var(--a-border)",
+              borderRadius: "var(--a-radius)",
+              padding: "22px 24px 18px",
+              boxShadow: "var(--a-shadow-sm)",
             }}
           >
-            {/* Chart header */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-start",
-                marginBottom: 24,
+                marginBottom: 20,
               }}
             >
               <div>
                 <div
                   style={{
                     fontFamily: "var(--font-body)",
-                    fontSize: 9,
-                    letterSpacing: "0.18em",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.06em",
                     textTransform: "uppercase",
-                    color: "var(--ink)",
-                    opacity: 0.4,
+                    color: "var(--a-muted)",
                     marginBottom: 6,
                   }}
                 >
                   Page views — last 7 days
                 </div>
                 <div
-                  style={{ display: "flex", alignItems: "baseline", gap: 12 }}
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 10,
+                  }}
                 >
                   <span
                     style={{
-                      fontFamily: "var(--font-display)",
-                      fontVariationSettings: '"opsz" 72, "wght" 800',
-                      fontSize: "2.4rem",
-                      color: "var(--ink)",
-                      lineHeight: 1,
+                      fontFamily: "var(--font-body)",
+                      fontSize: 28,
+                      fontWeight: 800,
+                      color: "var(--a-text)",
                       letterSpacing: "-0.04em",
+                      lineHeight: 1,
                     }}
                   >
                     {totalViews}
@@ -744,20 +548,21 @@ export function DashboardPage() {
                     style={{
                       fontFamily: "var(--font-body)",
                       fontSize: 12,
-                      color: "var(--ink)",
-                      opacity: 0.4,
+                      color: "var(--a-muted)",
                     }}
                   >
-                    total views
+                    total
                   </span>
                   {todayViews > 0 && (
                     <span
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 11,
-                        color: "var(--highland)",
-                        backgroundColor: "rgba(63,91,58,0.1)",
+                        fontWeight: 600,
+                        color: "var(--a-success)",
+                        backgroundColor: "var(--a-success-bg)",
                         padding: "2px 8px",
+                        borderRadius: "20px",
                       }}
                     >
                       +{todayViews} today
@@ -767,100 +572,104 @@ export function DashboardPage() {
               </div>
               <Link
                 to="/admin/analytics"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 10,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  color: "var(--ochre)",
-                  textDecoration: "none",
-                  opacity: 0.8,
-                  marginTop: 4,
-                }}
+                className="admin-btn admin-btn--secondary admin-btn--sm"
               >
-                Full analytics →
+                Full analytics
               </Link>
             </div>
 
             {totalViews === 0 ? (
               <div
                 style={{
-                  height: 180,
+                  height: 160,
+                  border: "2px dashed var(--a-border)",
+                  borderRadius: "var(--a-radius)",
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  border: "1px dashed rgba(18,17,16,0.1)",
-                  flexDirection: "column",
-                  gap: 8,
+                  gap: 6,
                 }}
               >
+                <svg
+                  width="32"
+                  height="32"
+                  viewBox="0 0 32 32"
+                  fill="none"
+                  stroke="var(--a-muted)"
+                  strokeWidth="1.5"
+                  opacity={0.4}
+                >
+                  <path
+                    d="M4 24l7-10 5 4 5-8 7 6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
                 <div
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: 13,
-                    color: "var(--ink)",
-                    opacity: 0.35,
+                    color: "var(--a-muted)",
+                    textAlign: "center",
                   }}
                 >
-                  No page views recorded yet.
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 11,
-                    color: "var(--ink)",
-                    opacity: 0.25,
-                  }}
-                >
-                  Visit the public site to start tracking.
+                  No page views yet.
+                  <br />
+                  Visit the site to start tracking.
                 </div>
               </div>
             ) : (
               <AreaChart
                 data={viewData}
                 labels={viewLabels}
-                height={180}
-                color="var(--ochre)"
+                height={160}
+                lineColor="var(--ochre)"
               />
             )}
 
-            {/* Top pages strip */}
+            {/* Top pages */}
             {(stats?.topPages.length ?? 0) > 0 && (
               <div
                 style={{
-                  marginTop: 20,
+                  marginTop: 18,
                   paddingTop: 16,
-                  borderTop: "1px solid rgba(18,17,16,0.06)",
+                  borderTop: "1px solid var(--a-border)",
                   display: "flex",
-                  gap: 16,
+                  gap: 0,
                   flexWrap: "wrap",
                 }}
               >
-                {stats!.topPages.slice(0, 5).map((p) => (
+                {stats!.topPages.slice(0, 5).map((p, i) => (
                   <div
                     key={p.path}
-                    style={{ display: "flex", flexDirection: "column", gap: 3 }}
+                    style={{
+                      flex: "1 0 80px",
+                      padding: "8px 12px",
+                      borderRight: i < 4 ? "1px solid var(--a-border)" : "none",
+                    }}
                   >
                     <div
                       style={{
                         fontFamily: "var(--font-body)",
-                        fontSize: 12,
-                        color: "var(--ink)",
-                        opacity: 0.7,
-                      }}
-                    >
-                      {p.label}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontVariationSettings: '"opsz" 14, "wght" 700',
-                        fontSize: "1.1rem",
-                        color: "var(--ink)",
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: "var(--a-text)",
                         letterSpacing: "-0.02em",
+                        lineHeight: 1,
+                        marginBottom: 3,
                       }}
                     >
                       {p.views}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: 10,
+                        color: "var(--a-muted)",
+                      }}
+                    >
+                      {p.label}
                     </div>
                   </div>
                 ))}
@@ -868,43 +677,14 @@ export function DashboardPage() {
             )}
           </div>
 
-          {/* Stat cards row */}
+          {/* Tours table */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns:
-                "clamp(120px, 2fr, 1fr) clamp(100px, 1.5fr, 1fr) clamp(90px, 1fr, 1fr)",
-              gap: 10,
-            }}
-          >
-            <StatCard
-              label="Tours"
-              value={tours.length}
-              sub={`${tours.filter((t) => t.difficulty === "demanding").length} demanding`}
-              accent="var(--indigo)"
-              href="/admin/tours"
-            />
-            <StatCard
-              label="Destinations"
-              value={destinations.length}
-              sub={`${destinations.filter((d) => d.featured).length} featured`}
-              accent="var(--sulphur)"
-              href="/admin/destinations"
-            />
-            <StatCard
-              label="Conversion"
-              value={`${stats?.conversionRate ?? 0}%`}
-              sub={`${stats?.formStarts ?? 0} form starts`}
-              accent="var(--highland)"
-              href="/admin/analytics"
-            />
-          </div>
-
-          {/* Recent tours */}
-          <div
-            style={{
-              backgroundColor: "white",
-              border: "1px solid rgba(18,17,16,0.07)",
+              backgroundColor: "var(--a-surface)",
+              border: "1px solid var(--a-border)",
+              borderRadius: "var(--a-radius)",
+              boxShadow: "var(--a-shadow-sm)",
+              overflow: "hidden",
             }}
           >
             <div
@@ -912,22 +692,14 @@ export function DashboardPage() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                padding: "16px 20px",
-                borderBottom: "1px solid rgba(18,17,16,0.06)",
+                padding: "14px 18px",
+                borderBottom: "1px solid var(--a-border)",
+                backgroundColor: "var(--a-bg)",
               }}
             >
-              <div
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 9,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "var(--ink)",
-                  opacity: 0.45,
-                }}
-              >
+              <span className="admin-card__title" style={{ margin: 0 }}>
                 Tours ({tours.length})
-              </div>
+              </span>
               <Link
                 to="/admin/tours"
                 className="admin-btn admin-btn--secondary admin-btn--sm"
@@ -963,8 +735,9 @@ export function DashboardPage() {
                         <span
                           style={{
                             fontFamily: "var(--font-body)",
-                            fontSize: 12,
-                            color: "var(--ink)",
+                            fontSize: 13,
+                            color: "var(--a-text)",
+                            fontWeight: 500,
                           }}
                         >
                           {tour.name.split("—")[0].trim()}
@@ -975,9 +748,7 @@ export function DashboardPage() {
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 12,
-                        color: "var(--ink)",
-                        opacity: 0.5,
-                        whiteSpace: "nowrap",
+                        color: "var(--a-muted)",
                       }}
                     >
                       {tour.duration}d
@@ -1001,26 +772,28 @@ export function DashboardPage() {
                 ))}
               </tbody>
             </table>
-            <div
-              style={{
-                padding: "12px 20px",
-                borderTop: "1px solid rgba(18,17,16,0.06)",
-              }}
-            >
-              <Link
-                to="/admin/tours"
+            {tours.length > 5 && (
+              <div
                 style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 10,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--ochre)",
-                  textDecoration: "none",
+                  padding: "10px 18px",
+                  borderTop: "1px solid var(--a-border)",
+                  backgroundColor: "var(--a-bg)",
                 }}
               >
-                View all {tours.length} tours →
-              </Link>
-            </div>
+                <Link
+                  to="/admin/tours"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--ochre)",
+                    textDecoration: "none",
+                  }}
+                >
+                  View all {tours.length} tours →
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1031,14 +804,17 @@ export function DashboardPage() {
             flexDirection: "column",
             gap: 16,
             position: "sticky",
-            top: 72,
+            top: "calc(var(--a-topbar-h) + 16px)",
           }}
         >
-          {/* Enquiries panel */}
+          {/* Enquiries */}
           <div
             style={{
-              backgroundColor: "white",
-              border: "1px solid rgba(18,17,16,0.07)",
+              backgroundColor: "var(--a-surface)",
+              border: "1px solid var(--a-border)",
+              borderRadius: "var(--a-radius)",
+              boxShadow: "var(--a-shadow-sm)",
+              overflow: "hidden",
             }}
           >
             <div
@@ -1046,32 +822,25 @@ export function DashboardPage() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                padding: "16px 20px",
-                borderBottom: "1px solid rgba(18,17,16,0.06)",
+                padding: "14px 18px",
+                borderBottom: "1px solid var(--a-border)",
+                backgroundColor: "var(--a-bg)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 9,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    color: "var(--ink)",
-                    opacity: 0.45,
-                  }}
-                >
-                  Recent enquiries
-                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="admin-card__title" style={{ margin: 0 }}>
+                  Enquiries
+                </span>
                 {unread > 0 && (
                   <span
                     style={{
                       backgroundColor: "var(--ochre)",
-                      color: "var(--ink)",
+                      color: "white",
                       fontFamily: "var(--font-body)",
                       fontSize: 9,
                       fontWeight: 700,
                       padding: "1px 7px",
+                      borderRadius: "20px",
                     }}
                   >
                     {unread} new
@@ -1086,23 +855,25 @@ export function DashboardPage() {
               </Link>
             </div>
 
-            <div style={{ padding: "0 20px" }}>
+            <div style={{ padding: "0 18px" }}>
               {enquiries.length === 0 ? (
-                <div
-                  style={{
-                    padding: "28px 0",
-                    textAlign: "center",
-                    fontFamily: "var(--font-body)",
-                    fontSize: 12,
-                    color: "var(--ink)",
-                    opacity: 0.3,
-                    fontStyle: "italic",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  No enquiries yet.
-                  <br />
-                  Plan Trip submissions appear here.
+                <div className="admin-empty">
+                  <div className="admin-empty__icon">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
+                      <rect x="1" y="3" width="14" height="10" />
+                      <path d="M1 3l7 5.5L15 3" />
+                    </svg>
+                  </div>
+                  <div className="admin-empty__text">
+                    No enquiries yet. Plan Trip form submissions appear here.
+                  </div>
                 </div>
               ) : (
                 enquiries
@@ -1114,22 +885,22 @@ export function DashboardPage() {
             {enquiries.length > 6 && (
               <div
                 style={{
-                  padding: "12px 20px",
-                  borderTop: "1px solid rgba(18,17,16,0.06)",
+                  padding: "10px 18px",
+                  borderTop: "1px solid var(--a-border)",
+                  backgroundColor: "var(--a-bg)",
                 }}
               >
                 <Link
                   to="/admin/enquiries"
                   style={{
                     fontFamily: "var(--font-body)",
-                    fontSize: 10,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
+                    fontSize: 11,
+                    fontWeight: 600,
                     color: "var(--ochre)",
                     textDecoration: "none",
                   }}
                 >
-                  See all {enquiries.length} enquiries →
+                  See all {enquiries.length} →
                 </Link>
               </div>
             )}
@@ -1138,29 +909,30 @@ export function DashboardPage() {
           {/* Quick actions */}
           <div
             style={{
-              backgroundColor: "var(--indigo)",
-              padding: "20px 20px 16px",
+              backgroundColor: "var(--a-surface)",
+              border: "1px solid var(--a-border)",
+              borderRadius: "var(--a-radius)",
+              boxShadow: "var(--a-shadow-sm)",
+              overflow: "hidden",
             }}
           >
             <div
               style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 9,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "var(--paper)",
-                opacity: 0.4,
-                marginBottom: 14,
+                padding: "14px 18px",
+                borderBottom: "1px solid var(--a-border)",
+                backgroundColor: "var(--a-bg)",
               }}
             >
-              Quick actions
+              <span className="admin-card__title" style={{ margin: 0 }}>
+                Quick actions
+              </span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <div style={{ padding: "6px 0" }}>
               {[
                 { label: "Add a new tour", href: "/admin/tours/new" },
                 { label: "Add a destination pin", href: "/admin/destinations" },
                 { label: "Upload a gallery photo", href: "/admin/gallery" },
-                { label: "Edit hero headline", href: "/admin/content" },
+                { label: "Edit page copy", href: "/admin/content" },
                 { label: "Reorder featured tours", href: "/admin/featured" },
                 { label: "Run site health check", href: "/admin/health" },
               ].map((a) => (
@@ -1171,27 +943,31 @@ export function DashboardPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "10px 12px",
+                    padding: "9px 18px",
                     fontFamily: "var(--font-body)",
-                    fontSize: 12,
-                    color: "var(--paper)",
+                    fontSize: 13,
+                    color: "var(--a-text)",
                     textDecoration: "none",
-                    opacity: 0.75,
-                    transition: "opacity 0.15s, background-color 0.15s",
+                    transition: "background-color 0.12s",
                   }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.opacity = "1";
-                    (e.currentTarget as HTMLElement).style.backgroundColor =
-                      "rgba(241,234,217,0.06)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.opacity = "0.75";
-                    (e.currentTarget as HTMLElement).style.backgroundColor =
-                      "transparent";
-                  }}
+                  onMouseEnter={(e) =>
+                    ((e.currentTarget as HTMLElement).style.backgroundColor =
+                      "var(--a-bg)")
+                  }
+                  onMouseLeave={(e) =>
+                    ((e.currentTarget as HTMLElement).style.backgroundColor =
+                      "transparent")
+                  }
                 >
                   <span>{a.label}</span>
-                  <span style={{ color: "var(--ochre)", fontSize: 14 }}>→</span>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: "var(--a-muted)",
+                    }}
+                  >
+                    →
+                  </span>
                 </Link>
               ))}
             </div>

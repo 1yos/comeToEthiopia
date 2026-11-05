@@ -19,13 +19,13 @@ export function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 400)); // brief delay prevents brute force
+    await new Promise((r) => setTimeout(r, 380));
     const ok = login(password);
     setLoading(false);
     if (ok) {
       navigate("/admin", { replace: true });
     } else {
-      setError("Incorrect password.");
+      setError("Incorrect password. Please try again.");
       setPassword("");
       inputRef.current?.focus();
     }
@@ -33,28 +33,27 @@ export function LoginPage() {
 
   return (
     <div className="cte-admin admin-login">
-      {/* Ghost Ge'ez watermark */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          bottom: "-5%",
-          right: "-3%",
-          fontFamily: "var(--font-geez)",
-          fontSize: "clamp(160px, 24vw, 320px)",
-          lineHeight: 1,
-          color: "var(--paper)",
-          opacity: 0.04,
-          userSelect: "none",
-          pointerEvents: "none",
-        }}
-      >
-        ፊደል {/* TODO-REVIEW */}
-      </div>
-
       <div className="admin-login__card">
-        <div className="admin-login__logo">Come to Ethiopia</div>
-        <div className="admin-login__subtitle">Admin Panel</div>
+        {/* Logo mark */}
+        <div className="admin-login__mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M7 1L2 4v6l5 3 5-3V4L7 1z"
+              stroke="white"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M7 1v12M2 4l5 3 5-3"
+              stroke="white"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        <h1 className="admin-login__title">Sign in</h1>
+        <p className="admin-login__sub">Come to Ethiopia Tours — Admin Panel</p>
 
         <form onSubmit={handleSubmit} noValidate>
           {error && (
@@ -64,16 +63,16 @@ export function LoginPage() {
           )}
 
           <div className="admin-field">
-            <label htmlFor="admin-password" className="admin-label">
+            <label htmlFor="admin-pw" className="admin-label">
               Password
             </label>
             <input
-              id="admin-password"
+              id="admin-pw"
               ref={inputRef}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter admin password"
+              placeholder="Enter your password"
               className="admin-input"
               autoComplete="current-password"
               required
@@ -84,9 +83,15 @@ export function LoginPage() {
             type="submit"
             className="admin-btn admin-btn--primary"
             disabled={loading || !password}
-            style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
+            style={{
+              width: "100%",
+              justifyContent: "center",
+              padding: "11px",
+              fontSize: 13,
+              marginTop: 4,
+            }}
           >
-            {loading ? "Checking…" : "Sign in →"}
+            {loading ? "Signing in…" : "Sign in →"}
           </button>
         </form>
 
@@ -94,8 +99,7 @@ export function LoginPage() {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 11,
-            color: "var(--ink)",
-            opacity: 0.35,
+            color: "var(--a-muted)",
             marginTop: 20,
             textAlign: "center",
           }}
