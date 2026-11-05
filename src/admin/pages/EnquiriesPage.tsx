@@ -2,22 +2,29 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getEnquiries,
   updateEnquiryStatus,
+  updateEnquiryNotes,
   deleteEnquiry,
   exportEnquiriesCSV,
+  markAllRead,
   type Enquiry,
 } from "../lib/enquiries";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 const STATUS_LABELS: Record<Enquiry["status"], string> = {
   new: "New",
+  "in-progress": "In progress",
   replied: "Replied",
+  closed: "Closed",
   archived: "Archived",
 };
 
-const STATUS_COLORS: Record<Enquiry["status"], string> = {
-  new: "var(--ochre)",
-  replied: "var(--highland)",
-  archived: "rgba(18,17,16,0.3)",
-};
+const STATUS_ORDER: Enquiry["status"][] = [
+  "new",
+  "in-progress",
+  "replied",
+  "closed",
+  "archived",
+];
 
 function Toast({
   message,
@@ -58,19 +65,26 @@ export function EnquiriesPage() {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [selected, setSelected] = useState<Enquiry | null>(null);
   const [filter, setFilter] = useState<"all" | Enquiry["status"]>("all");
+  const [search, setSearch] = useState("");
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Enquiry | null>(null);
+  const [notesDraft, setNotesDraft] = useState("");
 
   const load = useCallback(() => setEnquiries(getEnquiries()), []);
 
   useEffect(() => {
     load();
-    // Refresh every 30s in case another tab submits
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, [load]);
+
+  // Sync notes draft when selection changes
+  useEffect(() => {
+    setNotesDraft(selected?.internalNotes ?? "");
+  }, [selected]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -82,41 +96,64 @@ export function EnquiriesPage() {
     load();
     if (selected?.id === id)
       setSelected((prev) => (prev ? { ...prev, status } : null));
-    showToast(`Marked as ${status}.`, "success");
+    showToast(`Marked as ${STATUS_LABELS[status]}.`, "success");
   };
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Delete this enquiry permanently?")) return;
-    deleteEnquiry(id);
+  const handleDelete = () => {
+    if (!confirmDelete) return;
+    deleteEnquiry(confirmDelete.id);
     load();
-    if (selected?.id === id) setSelected(null);
+    if (selected?.id === confirmDelete.id) setSelected(null);
+    setConfirmDelete(null);
     showToast("Enquiry deleted.", "success");
   };
 
+  const handleMarkAllRead = () => {
+    markAllRead();
+    load();
+    showToast("All enquiries marked as read.", "success");
+  };
+
+  const handleSaveNotes = () => {
+    if (!selected) return;
+    updateEnquiryNotes(selected.id, notesDraft);
+    load();
+    showToast("Notes saved.", "success");
+  };
+
   const buildWhatsAppLink = (e: Enquiry, whatsapp: string) => {
-    const tours =
+    const tourText =
       e.selectedTourNames.length > 0
         ? e.selectedTourNames.join(", ")
         : e.tourFreeText || "a tour";
-    const text = `Hi ${e.name}, thank you for your enquiry about ${tours}. I would be happy to help plan your trip to Ethiopia. When works for a quick call or shall I send you an itinerary directly?`;
+    const text = `Hi ${e.name}, thank you for your enquiry about ${tourText}. I would be happy to help plan your trip to Ethiopia. When works for a quick call or shall I send you an itinerary directly?`;
     return `https://wa.me/${whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
   };
 
   const buildEmailLink = (e: Enquiry) => {
-    const tours =
+    const tourText =
       e.selectedTourNames.length > 0
         ? e.selectedTourNames.join(", ")
         : e.tourFreeText || "your upcoming trip";
-    const subject = `Re: Your Ethiopia trip enquiry — ${tours}`;
-    const body = `Hi ${e.name},\n\nThank you for getting in touch about ${tours}.\n\nI've reviewed your brief and I'd love to help plan your trip.\n\nBest regards,\nCome to Ethiopia Tours`;
+    const subject = `Re: Your Ethiopia trip enquiry — ${tourText}`;
+    const body = `Hi ${e.name},\n\nThank you for getting in touch about ${tourText}.\n\nI've reviewed your brief and I'd love to help plan your trip.\n\nBest regards,\nCome to Ethiopia Tours`;
     return `mailto:${e.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const WHATSAPP = "+251903182009";
 
-  const filtered = enquiries.filter(
-    (e) => filter === "all" || e.status === filter,
-  );
+  const filtered = enquiries.filter((e) => {
+    const matchFilter = filter === "all" || e.status === filter;
+    const matchSearch =
+      search === "" ||
+      e.name.toLowerCase().includes(search.toLowerCase()) ||
+      e.email.toLowerCase().includes(search.toLowerCase()) ||
+      e.selectedTourNames.some((t) =>
+        t.toLowerCase().includes(search.toLowerCase()),
+      ) ||
+      (e.tourFreeText?.toLowerCase().includes(search.toLowerCase()) ?? false);
+    return matchFilter && matchSearch;
+  });
 
   const newCount = enquiries.filter((e) => e.status === "new").length;
 
@@ -133,11 +170,10 @@ export function EnquiriesPage() {
                   marginLeft: 10,
                   backgroundColor: "var(--a-accent)",
                   color: "white",
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
+                  fontSize: "var(--a-text-xs)",
                   fontWeight: 700,
                   padding: "2px 8px",
-                  borderRadius: "20px",
+                  borderRadius: "var(--a-radius-full)",
                   verticalAlign: "middle",
                 }}
               >
@@ -150,10 +186,18 @@ export function EnquiriesPage() {
           </div>
         </div>
         <div className="admin-section-header__actions">
+          {newCount > 0 && (
+            <button
+              className="admin-btn admin-btn--ghost"
+              onClick={handleMarkAllRead}
+            >
+              Mark all read
+            </button>
+          )}
           <button
             className="admin-btn admin-btn--secondary"
             onClick={() => {
-              exportEnquiriesCSV();
+              exportEnquiriesCSV(filtered);
               showToast("CSV downloaded.", "success");
             }}
             disabled={enquiries.length === 0}
@@ -163,10 +207,17 @@ export function EnquiriesPage() {
         </div>
       </div>
 
-      {/* Filter tabs */}
+      {/* Search + filter bar */}
       <div className="admin-filter-bar">
+        <input
+          type="text"
+          placeholder="Search by name, email, or tour…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="admin-input admin-filter-bar__input"
+        />
         <div className="admin-filter-bar__chips">
-          {(["all", "new", "replied", "archived"] as const).map((f) => {
+          {(["all", ...STATUS_ORDER] as const).map((f) => {
             const count =
               f === "all"
                 ? enquiries.length
@@ -196,14 +247,26 @@ export function EnquiriesPage() {
         }}
       >
         {/* List */}
-        <div className="admin-card" style={{ padding: 0 }}>
+        <div className="admin-content-card">
           {filtered.length === 0 ? (
             <div className="admin-empty">
-              <div className="admin-empty__icon">[ ]</div>
+              <div className="admin-empty__icon">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <rect x="1" y="3" width="14" height="10" />
+                  <path d="M1 3l7 5.5L15 3" />
+                </svg>
+              </div>
               <div className="admin-empty__text">
-                {filter === "all"
+                {filter === "all" && !search
                   ? "No enquiries yet. Submissions from the Plan Trip form will appear here."
-                  : `No ${filter} enquiries.`}
+                  : `No enquiries match your ${search ? "search" : "filter"}.`}
               </div>
             </div>
           ) : (
@@ -218,39 +281,39 @@ export function EnquiriesPage() {
                     gap: 14,
                     padding: "16px 20px",
                     background:
-                      selected?.id === enq.id ? "rgba(18,17,16,0.03)" : "none",
+                      selected?.id === enq.id ? "var(--a-bg-subtle)" : "none",
                     border: "none",
                     borderLeft:
                       enq.status === "new"
-                        ? "3px solid var(--ochre)"
+                        ? "3px solid var(--a-accent)"
                         : "3px solid transparent",
-                    borderBottom: "1px solid rgba(18,17,16,0.06)",
+                    borderBottom: "1px solid var(--a-border)",
                     cursor: "pointer",
                     textAlign: "left",
                     width: "100%",
                     transition: "background-color 0.15s",
                   }}
                 >
-                  {/* Avatar */}
                   <div
                     style={{
                       width: 36,
                       height: 36,
                       backgroundColor:
-                        enq.status === "new" ? "var(--ochre)" : "var(--indigo)",
-                      color: "var(--paper)",
+                        enq.status === "new"
+                          ? "var(--a-accent)"
+                          : "var(--a-sidebar)",
+                      color: "white",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontFamily: "var(--font-body)",
-                      fontSize: 13,
+                      fontSize: "var(--a-text-sm)",
                       fontWeight: 600,
                       flexShrink: 0,
+                      borderRadius: "50%",
                     }}
                   >
                     {enq.name.slice(0, 2).toUpperCase()}
                   </div>
-
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
@@ -263,9 +326,8 @@ export function EnquiriesPage() {
                     >
                       <span
                         style={{
-                          fontFamily: "var(--font-body)",
-                          fontSize: 13,
-                          color: "var(--ink)",
+                          fontSize: "var(--a-text-sm)",
+                          color: "var(--a-text)",
                           fontWeight: enq.status === "new" ? 600 : 400,
                         }}
                       >
@@ -273,10 +335,8 @@ export function EnquiriesPage() {
                       </span>
                       <span
                         style={{
-                          fontFamily: "var(--font-body)",
                           fontSize: 10,
-                          color: "var(--ink)",
-                          opacity: 0.4,
+                          color: "var(--a-faint)",
                           flexShrink: 0,
                         }}
                       >
@@ -285,10 +345,8 @@ export function EnquiriesPage() {
                     </div>
                     <div
                       style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: 11,
-                        color: "var(--ink)",
-                        opacity: 0.5,
+                        fontSize: "var(--a-text-xs)",
+                        color: "var(--a-muted)",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -310,37 +368,17 @@ export function EnquiriesPage() {
                       }}
                     >
                       <span
-                        style={{
-                          fontFamily: "var(--font-body)",
-                          fontSize: 9,
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          color: STATUS_COLORS[enq.status],
-                        }}
+                        className={`admin-badge admin-badge--${enq.status}`}
                       >
                         {STATUS_LABELS[enq.status]}
                       </span>
                       {enq.dates && (
-                        <span
-                          style={{
-                            fontFamily: "var(--font-body)",
-                            fontSize: 10,
-                            color: "var(--ink)",
-                            opacity: 0.4,
-                          }}
-                        >
+                        <span style={{ fontSize: 10, color: "var(--a-muted)" }}>
                           {enq.dates}
                         </span>
                       )}
                       {enq.groupSize && (
-                        <span
-                          style={{
-                            fontFamily: "var(--font-body)",
-                            fontSize: 10,
-                            color: "var(--ink)",
-                            opacity: 0.4,
-                          }}
-                        >
+                        <span style={{ fontSize: 10, color: "var(--a-muted)" }}>
                           {enq.groupSize}
                         </span>
                       )}
@@ -354,7 +392,13 @@ export function EnquiriesPage() {
 
         {/* Detail panel */}
         {selected && (
-          <div className="admin-card" style={{ position: "sticky", top: 72 }}>
+          <div
+            className="admin-card"
+            style={{
+              position: "sticky",
+              top: "calc(var(--a-topbar-h) + 16px)",
+            }}
+          >
             <div
               style={{
                 display: "flex",
@@ -366,10 +410,9 @@ export function EnquiriesPage() {
               <div>
                 <div
                   style={{
-                    fontFamily: "var(--font-display)",
-                    fontVariationSettings: '"opsz" 24, "wght" 600',
-                    fontSize: "1.2rem",
-                    color: "var(--ink)",
+                    fontSize: "var(--a-text-md)",
+                    fontWeight: 700,
+                    color: "var(--a-text)",
                     letterSpacing: "-0.01em",
                   }}
                 >
@@ -377,10 +420,8 @@ export function EnquiriesPage() {
                 </div>
                 <div
                   style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 12,
-                    color: "var(--ink)",
-                    opacity: 0.5,
+                    fontSize: "var(--a-text-sm)",
+                    color: "var(--a-muted)",
                     marginTop: 2,
                   }}
                 >
@@ -396,21 +437,21 @@ export function EnquiriesPage() {
               </button>
             </div>
 
-            {/* Status */}
-            <div style={{ display: "flex", gap: 5, marginBottom: 20 }}>
-              {(["new", "replied", "archived"] as const).map((s) => (
+            {/* Status workflow */}
+            <div
+              style={{
+                display: "flex",
+                gap: 5,
+                marginBottom: 20,
+                flexWrap: "wrap",
+              }}
+            >
+              {STATUS_ORDER.map((s) => (
                 <button
                   key={s}
                   onClick={() => handleStatus(selected.id, s)}
-                  className="admin-btn admin-btn--secondary admin-btn--sm"
-                  style={{
-                    backgroundColor:
-                      selected.status === s ? "var(--ink)" : "transparent",
-                    color:
-                      selected.status === s ? "var(--paper)" : "var(--ink)",
-                    border: `1px solid ${selected.status === s ? "var(--ink)" : "rgba(18,17,16,0.2)"}`,
-                    textTransform: "capitalize",
-                  }}
+                  className={`admin-filter-chip${selected.status === s ? " admin-filter-chip--active" : ""}`}
+                  style={{ textTransform: "capitalize" }}
                 >
                   {STATUS_LABELS[s]}
                 </button>
@@ -420,10 +461,7 @@ export function EnquiriesPage() {
             {/* Details */}
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 0,
-                borderTop: "1px solid rgba(18,17,16,0.08)",
+                borderTop: "1px solid var(--a-border)",
                 marginBottom: 20,
               }}
             >
@@ -447,18 +485,16 @@ export function EnquiriesPage() {
                     gridTemplateColumns: "80px 1fr",
                     gap: 12,
                     padding: "10px 0",
-                    borderBottom: "1px solid rgba(18,17,16,0.06)",
+                    borderBottom: "1px solid var(--a-border)",
                     alignItems: "start",
                   }}
                 >
                   <span
                     style={{
-                      fontFamily: "var(--font-body)",
                       fontSize: 9,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
-                      color: "var(--ink)",
-                      opacity: 0.35,
+                      color: "var(--a-faint)",
                       paddingTop: 2,
                     }}
                   >
@@ -466,9 +502,8 @@ export function EnquiriesPage() {
                   </span>
                   <span
                     style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: 13,
-                      color: "var(--ink)",
+                      fontSize: "var(--a-text-sm)",
+                      color: "var(--a-text)",
                       lineHeight: 1.5,
                     }}
                   >
@@ -476,6 +511,26 @@ export function EnquiriesPage() {
                   </span>
                 </div>
               ))}
+            </div>
+
+            {/* Internal notes */}
+            <div className="admin-field" style={{ marginBottom: 20 }}>
+              <label className="admin-label">Internal notes</label>
+              <textarea
+                className="admin-textarea"
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                rows={2}
+                placeholder="Private notes for your team…"
+                style={{ minHeight: 60 }}
+              />
+              <button
+                className="admin-btn admin-btn--secondary admin-btn--sm"
+                onClick={handleSaveNotes}
+                style={{ marginTop: 6 }}
+              >
+                Save notes
+              </button>
             </div>
 
             {/* Reply CTAs */}
@@ -487,7 +542,7 @@ export function EnquiriesPage() {
                 className="admin-btn admin-btn--primary"
                 style={{
                   justifyContent: "center",
-                  backgroundColor: "var(--highland)",
+                  backgroundColor: "var(--a-success)",
                 }}
                 onClick={() => handleStatus(selected.id, "replied")}
               >
@@ -504,7 +559,7 @@ export function EnquiriesPage() {
               <button
                 className="admin-btn admin-btn--danger"
                 style={{ justifyContent: "center" }}
-                onClick={() => handleDelete(selected.id)}
+                onClick={() => setConfirmDelete(selected)}
               >
                 Delete enquiry
               </button>
@@ -512,6 +567,21 @@ export function EnquiriesPage() {
           </div>
         )}
       </div>
+
+      {/* Confirmation dialog */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete enquiry?"
+        message="This will permanently remove the enquiry from your inbox. This action cannot be undone."
+        itemName={
+          confirmDelete
+            ? `${confirmDelete.name} — ${formatDate(confirmDelete.timestamp)}`
+            : undefined
+        }
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
 
       {toast && <Toast message={toast.message} type={toast.type} />}
     </div>

@@ -285,7 +285,7 @@ export function GalleryAdminPage() {
                 objectFit: "cover",
                 marginTop: 12,
                 display: "block",
-                backgroundColor: "var(--indigo)",
+                backgroundColor: "var(--a-sidebar)",
               }}
             />
           )}
@@ -330,7 +330,7 @@ export function GalleryAdminPage() {
                   height: 180,
                   objectFit: "cover",
                   marginBottom: 16,
-                  backgroundColor: "var(--indigo)",
+                  backgroundColor: "var(--a-sidebar)",
                 }}
               />
               <div className="admin-field">
@@ -419,7 +419,7 @@ export function GalleryAdminPage() {
             key={item.id}
             style={{
               position: "relative",
-              backgroundColor: "var(--indigo)",
+              backgroundColor: "var(--a-sidebar)",
               overflow: "hidden",
             }}
           >
@@ -458,7 +458,7 @@ export function GalleryAdminPage() {
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 11,
-                  color: "var(--paper)",
+                  color: "var(--a-surface)",
                   lineHeight: 1.2,
                 }}
               >
@@ -468,7 +468,7 @@ export function GalleryAdminPage() {
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 9,
-                  color: "var(--ochre)",
+                  color: "var(--a-accent)",
                   opacity: 0.8,
                   marginTop: 2,
                   textTransform: "uppercase",

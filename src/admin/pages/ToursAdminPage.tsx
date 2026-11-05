@@ -119,7 +119,7 @@ export function ToursAdminPage() {
                           style={{
                             fontFamily: "var(--font-body)",
                             fontSize: 13,
-                            color: "var(--ink)",
+                            color: "var(--a-text)",
                             fontWeight: 500,
                             lineHeight: 1.3,
                           }}
@@ -131,7 +131,7 @@ export function ToursAdminPage() {
                             fontFamily: "var(--font-display)",
                             fontStyle: "italic",
                             fontSize: 11,
-                            color: "var(--ink)",
+                            color: "var(--a-text)",
                             opacity: 0.45,
                             marginTop: 2,
                           }}
@@ -145,7 +145,7 @@ export function ToursAdminPage() {
                     style={{
                       fontFamily: "var(--font-body)",
                       fontSize: 12,
-                      color: "var(--ink)",
+                      color: "var(--a-text)",
                       opacity: 0.6,
                       whiteSpace: "nowrap",
                     }}
@@ -163,7 +163,7 @@ export function ToursAdminPage() {
                     style={{
                       fontFamily: "var(--font-body)",
                       fontSize: 11,
-                      color: "var(--ink)",
+                      color: "var(--a-text)",
                       opacity: 0.5,
                     }}
                   >

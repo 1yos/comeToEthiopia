@@ -1,16 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { tours } from "@/data/tours";
 import { destinations } from "@/data/destinations";
 import { getEnquiries, getUnreadCount, type Enquiry } from "../lib/enquiries";
-import { getAnalytics, type AnalyticsSummary } from "../lib/analytics";
+import {
+  getAnalytics,
+  getDailyViews,
+  getViewsForPeriod,
+  type AnalyticsSummary,
+} from "../lib/analytics";
+import { Sparkline } from "../components/Sparkline";
 
 // ── SVG Area Chart ────────────────────────────────────────────────────────────
 function AreaChart({
   data,
   labels,
   height = 160,
-  lineColor = "var(--ochre)",
+  lineColor = "var(--a-accent)",
 }: {
   data: number[];
   labels: string[];
@@ -41,7 +47,7 @@ function AreaChart({
   const cW = width - pL - pR;
   const cH = height - pT - pB;
 
-  const x = (i: number) => pL + (i / (n - 1)) * cW;
+  const x = (i: number) => pL + (i / Math.max(n - 1, 1)) * cW;
   const y = (v: number) => pT + cH - (v / max) * cH;
 
   const line = data.reduce((acc, v, i) => {
@@ -67,12 +73,10 @@ function AreaChart({
       >
         <defs>
           <linearGradient id="cte-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={lineColor} stopOpacity="0.15" />
-            <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
+            <stop offset="0%" stopColor={lineColor} stopOpacity={0.15} />
+            <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
           </linearGradient>
         </defs>
-
-        {/* Grid lines */}
         {[0, 0.33, 0.66, 1].map((f) => (
           <line
             key={f}
@@ -84,11 +88,7 @@ function AreaChart({
             strokeWidth={1}
           />
         ))}
-
-        {/* Area */}
         <path d={area} fill="url(#cte-grad)" />
-
-        {/* Line */}
         <path
           d={line}
           fill="none"
@@ -97,21 +97,18 @@ function AreaChart({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-
-        {/* Points + hover */}
         {data.map((v, i) => (
           <g key={i}>
             <rect
-              x={x(i) - 24}
+              x={x(i) - Math.max(cW / n / 2, 12)}
               y={pT}
-              width={48}
+              width={Math.max(cW / n, 24)}
               height={cH}
               fill="transparent"
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
             />
-            {/* Dot */}
-            {(hover === i || v > 0) && (
+            {(hover === i || (v > 0 && n <= 14)) && (
               <circle
                 cx={x(i)}
                 cy={y(v)}
@@ -122,7 +119,6 @@ function AreaChart({
                 style={{ transition: "r 0.12s" }}
               />
             )}
-            {/* Hover tooltip */}
             {hover === i && (
               <>
                 <line
@@ -156,37 +152,98 @@ function AreaChart({
                 </text>
               </>
             )}
-            {/* Day label */}
-            <text
-              x={x(i)}
-              y={height - 4}
-              textAnchor="middle"
-              fill="var(--a-muted)"
-              fontSize={10}
-              fontFamily="var(--font-body)"
-            >
-              {labels[i]}
-            </text>
+            {n <= 14 && (
+              <text
+                x={x(i)}
+                y={height - 4}
+                textAnchor="middle"
+                fill="var(--a-muted)"
+                fontSize={10}
+                fontFamily="var(--font-body)"
+              >
+                {labels[i]}
+              </text>
+            )}
           </g>
         ))}
+        {n > 14 && (
+          <>
+            {labels.map((label, i) => {
+              if (i % Math.ceil(n / 8) !== 0 && i !== n - 1) return null;
+              return (
+                <text
+                  key={i}
+                  x={x(i)}
+                  y={height - 4}
+                  textAnchor="middle"
+                  fill="var(--a-muted)"
+                  fontSize={10}
+                  fontFamily="var(--font-body)"
+                >
+                  {label}
+                </text>
+              );
+            })}
+          </>
+        )}
       </svg>
     </div>
   );
 }
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
+// ── Trend delta ───────────────────────────────────────────────────────────────
+function TrendDelta({
+  current,
+  previous,
+}: {
+  current: number;
+  previous: number;
+}) {
+  if (previous === 0 && current === 0) {
+    return (
+      <span className="admin-stat__trend admin-stat__trend--flat">
+        — No data
+      </span>
+    );
+  }
+  if (previous === 0) {
+    return (
+      <span className="admin-stat__trend admin-stat__trend--up">↑ New</span>
+    );
+  }
+  const pct = Math.round(((current - previous) / previous) * 100);
+  if (pct === 0)
+    return (
+      <span className="admin-stat__trend admin-stat__trend--flat">→ 0%</span>
+    );
+  if (pct > 0)
+    return (
+      <span className="admin-stat__trend admin-stat__trend--up">↑ {pct}%</span>
+    );
+  return (
+    <span className="admin-stat__trend admin-stat__trend--down">
+      ↓ {Math.abs(pct)}%
+    </span>
+  );
+}
+
+// ── KPI card with sparkline ───────────────────────────────────────────────────
 function KpiCard({
   label,
   value,
   sub,
   accentColor,
   href,
+  sparkData,
+  trend,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   accentColor: string;
   href: string;
+  sparkData?: number[];
+  trend?: { current: number; previous: number };
 }) {
   return (
     <Link to={href} style={{ textDecoration: "none", display: "block" }}>
@@ -203,6 +260,12 @@ function KpiCard({
         <div className="admin-stat__number" style={{ marginTop: "auto" }}>
           {value}
         </div>
+        {sparkData && sparkData.length > 1 && (
+          <Sparkline data={sparkData} color={accentColor} />
+        )}
+        {trend && (
+          <TrendDelta current={trend.current} previous={trend.previous} />
+        )}
         {sub && <div className="admin-stat__sub">{sub}</div>}
       </div>
     </Link>
@@ -218,8 +281,8 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
     if (s < 86400) return `${Math.floor(s / 3600)}h`;
     return `${Math.floor(s / 86400)}d`;
   };
-
-  const avatarBg = enq.status === "new" ? "var(--ochre)" : "var(--a-sidebar)";
+  const avatarBg =
+    enq.status === "new" ? "var(--a-accent)" : "var(--a-sidebar)";
 
   return (
     <Link
@@ -234,7 +297,8 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
         transition: "background-color 0.12s",
       }}
       onMouseEnter={(e) =>
-        ((e.currentTarget as HTMLElement).style.backgroundColor = "var(--a-bg)")
+        ((e.currentTarget as HTMLElement).style.backgroundColor =
+          "var(--a-bg-subtle)")
       }
       onMouseLeave={(e) =>
         ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")
@@ -250,8 +314,7 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "var(--font-body)",
-          fontSize: 11,
+          fontSize: "var(--a-text-xs)",
           fontWeight: 700,
           flexShrink: 0,
         }}
@@ -262,8 +325,7 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 13,
+            fontSize: "var(--a-text-sm)",
             fontWeight: enq.status === "new" ? 600 : 400,
             color: "var(--a-text)",
             overflow: "hidden",
@@ -275,8 +337,7 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
         </div>
         <div
           style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
+            fontSize: "var(--a-text-xs)",
             color: "var(--a-muted)",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -291,42 +352,65 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
         <span
-          style={{
-            display: "inline-block",
-            fontFamily: "var(--font-body)",
-            fontSize: 9,
-            fontWeight: 600,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color:
-              enq.status === "new"
-                ? "var(--ochre)"
-                : enq.status === "replied"
-                  ? "var(--a-success)"
-                  : "var(--a-muted)",
-            backgroundColor:
-              enq.status === "new"
-                ? "var(--a-accent-bg)"
-                : enq.status === "replied"
-                  ? "var(--a-success-bg)"
-                  : "transparent",
-            padding: "2px 6px",
-            borderRadius: "20px",
-            marginBottom: 3,
-          }}
+          className={`admin-badge admin-badge--${enq.status}`}
+          style={{ marginBottom: 3 }}
         >
           {enq.status}
         </span>
-        <div
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 10,
-            color: "var(--a-faint)",
-          }}
-        >
+        <div style={{ fontSize: 10, color: "var(--a-faint)" }}>
           {ago(enq.timestamp)}
         </div>
       </div>
+    </Link>
+  );
+}
+
+// ── Needs attention item ──────────────────────────────────────────────────────
+function AttentionItem({
+  icon,
+  variant,
+  text,
+  meta,
+  href,
+}: {
+  icon: string;
+  variant: "warning" | "danger" | "info";
+  text: string;
+  meta: string;
+  href: string;
+}) {
+  return (
+    <Link to={href} className="admin-attention-item">
+      <div
+        className={`admin-attention-item__icon admin-attention-item__icon--${variant}`}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        >
+          <path d={icon} />
+        </svg>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="admin-attention-item__text">{text}</div>
+        <div className="admin-attention-item__meta">{meta}</div>
+      </div>
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="var(--a-muted)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      >
+        <path d="M6 4l4 4-4 4" />
+      </svg>
     </Link>
   );
 }
@@ -336,28 +420,112 @@ export function DashboardPage() {
   const [stats, setStats] = useState<AnalyticsSummary | null>(null);
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [unread, setUnread] = useState(0);
+  const [dateRange, setDateRange] = useState<7 | 30 | 90>(7);
+  const [chartData, setChartData] = useState<{ date: string; views: number }[]>(
+    [],
+  );
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const refresh = () => {
       setStats(getAnalytics());
       setEnquiries(getEnquiries());
       setUnread(getUnreadCount());
+      setLoading(false);
     };
     refresh();
     const iv = setInterval(refresh, 20000);
     return () => clearInterval(iv);
   }, []);
 
-  const viewData = stats?.last7Days.map((d) => d.views) ?? Array(7).fill(0);
-  const viewLabels = stats?.last7Days.map((d) => d.date) ?? [
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ];
+  useEffect(() => {
+    setChartData(getDailyViews(dateRange));
+  }, [dateRange]);
+
+  // Trend calculations
+  const trends = useMemo(() => {
+    const current7 = getViewsForPeriod(7);
+    const previous7 = getViewsForPeriod(14) - current7;
+    const currentEnq = enquiries.filter(
+      (e) => Date.now() - new Date(e.timestamp).getTime() < 7 * 86400000,
+    ).length;
+    const previousEnq = enquiries.filter((e) => {
+      const age = Date.now() - new Date(e.timestamp).getTime();
+      return age >= 7 * 86400000 && age < 14 * 86400000;
+    }).length;
+    return {
+      views: { current: current7, previous: previous7 },
+      enquiries: { current: currentEnq, previous: previousEnq },
+    };
+  }, [enquiries]);
+
+  // Sparkline data (last 7 days)
+  const sparkData = useMemo(() => getDailyViews(7).map((d) => d.views), []);
+
+  // Needs attention
+  const attentionItems = useMemo(() => {
+    const items: {
+      icon: string;
+      variant: "warning" | "danger" | "info";
+      text: string;
+      meta: string;
+      href: string;
+    }[] = [];
+
+    // Unreplied > 48h
+    const oldUnreplied = enquiries.filter(
+      (e) =>
+        (e.status === "new" || e.status === "in-progress") &&
+        Date.now() - new Date(e.timestamp).getTime() > 48 * 3600000,
+    );
+    if (oldUnreplied.length > 0) {
+      items.push({
+        icon: "M8 1.5a4 4 0 00-4 4v3l-1.5 2.5h11L12 8.5v-3a4 4 0 00-4-4z M6 13a2 2 0 004 0",
+        variant: "danger",
+        text: `${oldUnreplied.length} unreplied ${oldUnreplied.length === 1 ? "enquiry" : "enquiries"} older than 48h`,
+        meta: oldUnreplied
+          .slice(0, 2)
+          .map((e) => e.name)
+          .join(", "),
+        href: "/admin/enquiries",
+      });
+    }
+
+    // Tours missing taglines
+    const noTagline = tours.filter((t) => !t.tagline.trim());
+    if (noTagline.length > 0) {
+      items.push({
+        icon: "M2 8h12M8 2v12",
+        variant: "warning",
+        text: `${noTagline.length} ${noTagline.length === 1 ? "tour" : "tours"} missing taglines`,
+        meta: noTagline
+          .map((t) => t.name.split("—")[0].trim())
+          .slice(0, 2)
+          .join(", "),
+        href: "/admin/tours",
+      });
+    }
+
+    // Tours missing best season
+    const noSeason = tours.filter((t) => !t.bestSeason);
+    if (noSeason.length > 0) {
+      items.push({
+        icon: "M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4l2.5 2.5",
+        variant: "info",
+        text: `${noSeason.length} ${noSeason.length === 1 ? "tour" : "tours"} missing best season info`,
+        meta: noSeason
+          .map((t) => t.name.split("—")[0].trim())
+          .slice(0, 2)
+          .join(", "),
+        href: "/admin/tours",
+      });
+    }
+
+    return items;
+  }, [enquiries]);
+
+  const viewData = chartData.map((d) => d.views);
+  const viewLabels = chartData.map((d) => d.date);
   const totalViews = stats?.totalViews ?? 0;
   const todayViews = viewData[viewData.length - 1] ?? 0;
   const convRate = stats?.conversionRate ?? 0;
@@ -372,20 +540,12 @@ export function DashboardPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* ── Page header ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <h1 className="admin-page-title">Dashboard</h1>
-          <p className="admin-page-sub">{today}</p>
+      <div className="admin-section-header">
+        <div className="admin-section-header__left">
+          <div className="admin-section-header__title">Dashboard</div>
+          <div className="admin-section-header__sub">{today}</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="admin-section-header__actions">
           {unread > 0 && (
             <Link to="/admin/enquiries" className="admin-btn admin-btn--accent">
               {unread} new {unread === 1 ? "enquiry" : "enquiries"}
@@ -395,49 +555,56 @@ export function DashboardPage() {
       </div>
 
       {/* ── KPI row ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-          gap: 12,
-        }}
-      >
-        <KpiCard
-          label="Page views"
-          value={totalViews}
-          sub={todayViews > 0 ? `+${todayViews} today` : "No views today"}
-          accentColor="var(--ochre)"
-          href="/admin/analytics"
-        />
-        <KpiCard
-          label="Enquiries"
-          value={enquiries.length}
-          sub={unread > 0 ? `${unread} unread` : "All read"}
-          accentColor="var(--highland)"
-          href="/admin/enquiries"
-        />
-        <KpiCard
-          label="Tours"
-          value={tours.length}
-          sub={`${tours.filter((t) => t.difficulty === "easy").length} easy · ${tours.filter((t) => t.difficulty === "moderate").length} mod`}
-          accentColor="var(--indigo)"
-          href="/admin/tours"
-        />
-        <KpiCard
-          label="Destinations"
-          value={destinations.length}
-          sub={`${destinations.filter((d) => d.featured).length} on map`}
-          accentColor="var(--sulphur)"
-          href="/admin/destinations"
-        />
-        <KpiCard
-          label="Conversion"
-          value={`${convRate}%`}
-          sub={`${stats?.formStarts ?? 0} form starts`}
-          accentColor="var(--ochre)"
-          href="/admin/analytics"
-        />
-      </div>
+      {loading ? (
+        <div className="admin-stats">
+          <div className="admin-skeleton admin-skeleton--card" />
+          <div className="admin-skeleton admin-skeleton--card" />
+          <div className="admin-skeleton admin-skeleton--card" />
+          <div className="admin-skeleton admin-skeleton--card" />
+          <div className="admin-skeleton admin-skeleton--card" />
+        </div>
+      ) : (
+        <div className="admin-stats">
+          <KpiCard
+            label="Page views"
+            value={totalViews}
+            sub={todayViews > 0 ? `+${todayViews} today` : "No views today"}
+            accentColor="var(--a-accent)"
+            href="/admin/analytics"
+            sparkData={sparkData}
+            trend={trends.views}
+          />
+          <KpiCard
+            label="Enquiries"
+            value={enquiries.length}
+            sub={unread > 0 ? `${unread} unread` : "All read"}
+            accentColor="var(--a-success)"
+            href="/admin/enquiries"
+            trend={trends.enquiries}
+          />
+          <KpiCard
+            label="Tours"
+            value={tours.length}
+            sub={`${tours.filter((t) => t.difficulty === "easy").length} easy · ${tours.filter((t) => t.difficulty === "moderate").length} mod`}
+            accentColor="var(--a-info)"
+            href="/admin/tours"
+          />
+          <KpiCard
+            label="Destinations"
+            value={destinations.length}
+            sub={`${destinations.filter((d) => d.featured).length} on map`}
+            accentColor="var(--a-warning)"
+            href="/admin/destinations"
+          />
+          <KpiCard
+            label="Conversion"
+            value={`${convRate}%`}
+            sub={`${stats?.formStarts ?? 0} form starts`}
+            accentColor="var(--a-accent)"
+            href="/admin/analytics"
+          />
+        </div>
+      )}
 
       {/* ── Two-column grid ── */}
       <div
@@ -451,96 +618,84 @@ export function DashboardPage() {
         {/* ── Left ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Chart card */}
-          <div
-            style={{
-              backgroundColor: "var(--a-surface)",
-              border: "1px solid var(--a-border)",
-              borderRadius: "var(--a-radius)",
-              padding: "22px 24px 18px",
-              boxShadow: "var(--a-shadow-sm)",
-            }}
-          >
+          <div className="admin-card">
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-start",
                 marginBottom: 20,
+                flexWrap: "wrap",
+                gap: 12,
               }}
             >
               <div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
-                    color: "var(--a-muted)",
-                    marginBottom: 6,
-                  }}
-                >
-                  Page views — last 7 days
+                <div className="admin-card__title" style={{ marginBottom: 6 }}>
+                  Page views
                 </div>
                 <div
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: 10,
-                  }}
+                  style={{ display: "flex", alignItems: "baseline", gap: 10 }}
                 >
                   <span
                     style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: 28,
+                      fontSize: "var(--a-text-2xl)",
                       fontWeight: 800,
                       color: "var(--a-text)",
                       letterSpacing: "-0.04em",
                       lineHeight: 1,
+                      fontVariantNumeric: "tabular-nums",
                     }}
                   >
-                    {totalViews}
+                    {dateRange === 7
+                      ? totalViews
+                      : getViewsForPeriod(dateRange)}
                   </span>
                   <span
                     style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: 12,
+                      fontSize: "var(--a-text-sm)",
                       color: "var(--a-muted)",
                     }}
                   >
-                    total
+                    last {dateRange} days
                   </span>
-                  {todayViews > 0 && (
+                  {todayViews > 0 && dateRange === 7 && (
                     <span
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "var(--a-success)",
-                        backgroundColor: "var(--a-success-bg)",
-                        padding: "2px 8px",
-                        borderRadius: "20px",
-                      }}
+                      className="admin-badge admin-badge--easy"
+                      style={{ fontWeight: 600 }}
                     >
                       +{todayViews} today
                     </span>
                   )}
                 </div>
               </div>
-              <Link
-                to="/admin/analytics"
-                className="admin-btn admin-btn--secondary admin-btn--sm"
-              >
-                Full analytics
-              </Link>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {/* Date range selector */}
+                <div className="admin-date-range">
+                  {([7, 30, 90] as const).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDateRange(d)}
+                      className={`admin-date-range__btn${dateRange === d ? " admin-date-range__btn--active" : ""}`}
+                    >
+                      {d}d
+                    </button>
+                  ))}
+                </div>
+                <Link
+                  to="/admin/analytics"
+                  className="admin-btn admin-btn--secondary admin-btn--sm"
+                >
+                  Full analytics
+                </Link>
+              </div>
             </div>
 
-            {totalViews === 0 ? (
+            {totalViews === 0 && dateRange === 7 ? (
               <div
                 style={{
                   height: 160,
                   border: "2px dashed var(--a-border)",
-                  borderRadius: "var(--a-radius)",
+                  borderRadius: "var(--a-radius-md)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -565,8 +720,7 @@ export function DashboardPage() {
                 </svg>
                 <div
                   style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 13,
+                    fontSize: "var(--a-text-sm)",
                     color: "var(--a-muted)",
                     textAlign: "center",
                   }}
@@ -581,80 +735,37 @@ export function DashboardPage() {
                 data={viewData}
                 labels={viewLabels}
                 height={160}
-                lineColor="var(--ochre)"
+                lineColor="var(--a-accent)"
               />
-            )}
-
-            {/* Top pages */}
-            {(stats?.topPages.length ?? 0) > 0 && (
-              <div
-                style={{
-                  marginTop: 18,
-                  paddingTop: 16,
-                  borderTop: "1px solid var(--a-border)",
-                  display: "flex",
-                  gap: 0,
-                  flexWrap: "wrap",
-                }}
-              >
-                {stats!.topPages.slice(0, 5).map((p, i) => (
-                  <div
-                    key={p.path}
-                    style={{
-                      flex: "1 0 80px",
-                      padding: "8px 12px",
-                      borderRight: i < 4 ? "1px solid var(--a-border)" : "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: 16,
-                        fontWeight: 700,
-                        color: "var(--a-text)",
-                        letterSpacing: "-0.02em",
-                        lineHeight: 1,
-                        marginBottom: 3,
-                      }}
-                    >
-                      {p.views}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: 10,
-                        color: "var(--a-muted)",
-                      }}
-                    >
-                      {p.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
             )}
           </div>
 
-          {/* Tours table */}
-          <div
-            style={{
-              backgroundColor: "var(--a-surface)",
-              border: "1px solid var(--a-border)",
-              borderRadius: "var(--a-radius)",
-              boxShadow: "var(--a-shadow-sm)",
-              overflow: "hidden",
-            }}
-          >
+          {/* Needs attention panel */}
+          {attentionItems.length > 0 && (
             <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "14px 18px",
-                borderBottom: "1px solid var(--a-border)",
-                backgroundColor: "var(--a-bg)",
-              }}
+              className="admin-card"
+              style={{ padding: 0, overflow: "hidden" }}
             >
-              <span className="admin-card__title" style={{ margin: 0 }}>
+              <div className="admin-content-card__header">
+                <span className="admin-content-card__header-title">
+                  Needs attention
+                </span>
+                <span className="admin-badge admin-badge--new">
+                  {attentionItems.length}
+                </span>
+              </div>
+              <div style={{ padding: "0 20px" }}>
+                {attentionItems.map((item, i) => (
+                  <AttentionItem key={i} {...item} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tours table */}
+          <div className="admin-content-card">
+            <div className="admin-content-card__header">
+              <span className="admin-content-card__header-title">
                 Tours ({tours.length})
               </span>
               <Link
@@ -664,86 +775,80 @@ export function DashboardPage() {
                 Manage all
               </Link>
             </div>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Tour</th>
-                  <th>Days</th>
-                  <th>Level</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {tours.slice(0, 5).map((tour) => (
-                  <tr key={tour.id}>
-                    <td>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                        }}
-                      >
-                        <img
-                          src={`/media/tours/${tour.imageSlot}`}
-                          alt={tour.imageAlt}
-                          className="admin-thumb"
-                        />
-                        <span
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Tour</th>
+                    <th>Days</th>
+                    <th>Level</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tours.slice(0, 5).map((tour) => (
+                    <tr key={tour.id}>
+                      <td>
+                        <div
                           style={{
-                            fontFamily: "var(--font-body)",
-                            fontSize: 13,
-                            color: "var(--a-text)",
-                            fontWeight: 500,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
                           }}
                         >
-                          {tour.name.split("—")[0].trim()}
+                          <img
+                            src={`/media/tours/${tour.imageSlot}`}
+                            alt={tour.imageAlt}
+                            className="admin-thumb"
+                          />
+                          <span
+                            style={{
+                              fontSize: "var(--a-text-sm)",
+                              color: "var(--a-text)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {tour.name.split("—")[0].trim()}
+                          </span>
+                        </div>
+                      </td>
+                      <td
+                        data-numeric
+                        style={{
+                          fontSize: "var(--a-text-sm)",
+                          color: "var(--a-muted)",
+                        }}
+                      >
+                        {tour.duration}d
+                      </td>
+                      <td>
+                        <span
+                          className={`admin-badge admin-badge--${tour.difficulty}`}
+                        >
+                          {tour.difficulty}
                         </span>
-                      </div>
-                    </td>
-                    <td
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: 12,
-                        color: "var(--a-muted)",
-                      }}
-                    >
-                      {tour.duration}d
-                    </td>
-                    <td>
-                      <span
-                        className={`admin-badge admin-badge--${tour.difficulty}`}
-                      >
-                        {tour.difficulty}
-                      </span>
-                    </td>
-                    <td>
-                      <Link
-                        to={`/admin/tours/${tour.id}`}
-                        className="admin-btn admin-btn--secondary admin-btn--sm"
-                      >
-                        Edit
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td>
+                        <Link
+                          to={`/admin/tours/${tour.id}`}
+                          className="admin-btn admin-btn--secondary admin-btn--sm"
+                        >
+                          Edit
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             {tours.length > 5 && (
-              <div
-                style={{
-                  padding: "10px 18px",
-                  borderTop: "1px solid var(--a-border)",
-                  backgroundColor: "var(--a-bg)",
-                }}
-              >
+              <div className="admin-content-card__footer">
                 <Link
                   to="/admin/tours"
                   style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 11,
+                    fontSize: "var(--a-text-xs)",
                     fontWeight: 600,
-                    color: "var(--ochre)",
+                    color: "var(--a-accent-text)",
                     textDecoration: "none",
                   }}
                 >
@@ -765,39 +870,21 @@ export function DashboardPage() {
           }}
         >
           {/* Enquiries */}
-          <div
-            style={{
-              backgroundColor: "var(--a-surface)",
-              border: "1px solid var(--a-border)",
-              borderRadius: "var(--a-radius)",
-              boxShadow: "var(--a-shadow-sm)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "14px 18px",
-                borderBottom: "1px solid var(--a-border)",
-                backgroundColor: "var(--a-bg)",
-              }}
-            >
+          <div className="admin-content-card">
+            <div className="admin-content-card__header">
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span className="admin-card__title" style={{ margin: 0 }}>
+                <span className="admin-content-card__header-title">
                   Enquiries
                 </span>
                 {unread > 0 && (
                   <span
                     style={{
-                      backgroundColor: "var(--ochre)",
+                      backgroundColor: "var(--a-accent)",
                       color: "white",
-                      fontFamily: "var(--font-body)",
                       fontSize: 9,
                       fontWeight: 700,
                       padding: "1px 7px",
-                      borderRadius: "20px",
+                      borderRadius: "var(--a-radius-full)",
                     }}
                   >
                     {unread} new
@@ -840,20 +927,13 @@ export function DashboardPage() {
             </div>
 
             {enquiries.length > 6 && (
-              <div
-                style={{
-                  padding: "10px 18px",
-                  borderTop: "1px solid var(--a-border)",
-                  backgroundColor: "var(--a-bg)",
-                }}
-              >
+              <div className="admin-content-card__footer">
                 <Link
                   to="/admin/enquiries"
                   style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 11,
+                    fontSize: "var(--a-text-xs)",
                     fontWeight: 600,
-                    color: "var(--ochre)",
+                    color: "var(--a-accent-text)",
                     textDecoration: "none",
                   }}
                 >
@@ -864,23 +944,9 @@ export function DashboardPage() {
           </div>
 
           {/* Quick actions */}
-          <div
-            style={{
-              backgroundColor: "var(--a-surface)",
-              border: "1px solid var(--a-border)",
-              borderRadius: "var(--a-radius)",
-              boxShadow: "var(--a-shadow-sm)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                padding: "14px 18px",
-                borderBottom: "1px solid var(--a-border)",
-                backgroundColor: "var(--a-bg)",
-              }}
-            >
-              <span className="admin-card__title" style={{ margin: 0 }}>
+          <div className="admin-content-card">
+            <div className="admin-content-card__header">
+              <span className="admin-content-card__header-title">
                 Quick actions
               </span>
             </div>
@@ -901,15 +967,14 @@ export function DashboardPage() {
                     alignItems: "center",
                     justifyContent: "space-between",
                     padding: "9px 18px",
-                    fontFamily: "var(--font-body)",
-                    fontSize: 13,
+                    fontSize: "var(--a-text-sm)",
                     color: "var(--a-text)",
                     textDecoration: "none",
                     transition: "background-color 0.12s",
                   }}
                   onMouseEnter={(e) =>
                     ((e.currentTarget as HTMLElement).style.backgroundColor =
-                      "var(--a-bg)")
+                      "var(--a-bg-subtle)")
                   }
                   onMouseLeave={(e) =>
                     ((e.currentTarget as HTMLElement).style.backgroundColor =
@@ -919,7 +984,7 @@ export function DashboardPage() {
                   <span>{a.label}</span>
                   <span
                     style={{
-                      fontSize: 12,
+                      fontSize: "var(--a-text-xs)",
                       color: "var(--a-muted)",
                     }}
                   >

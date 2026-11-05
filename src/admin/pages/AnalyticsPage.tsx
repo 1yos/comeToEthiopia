@@ -35,7 +35,7 @@ function BarChart({ data }: { data: { date: string; views: number }[] }) {
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: 9,
-                color: "var(--ink)",
+                color: "var(--a-text)",
                 opacity: 0.5,
               }}
             >
@@ -45,7 +45,7 @@ function BarChart({ data }: { data: { date: string; views: number }[] }) {
               style={{
                 width: "100%",
                 height: `${Math.max(pct, d.views > 0 ? 8 : 2)}%`,
-                backgroundColor: pct === 100 ? "var(--ochre)" : "var(--indigo)",
+                backgroundColor: pct === 100 ? "var(--a-accent)" : "var(--a-sidebar)",
                 opacity: pct === 100 ? 1 : 0.4 + (pct / 100) * 0.5,
                 transition: "height 0.4s ease",
               }}
@@ -55,7 +55,7 @@ function BarChart({ data }: { data: { date: string; views: number }[] }) {
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: 9,
-                color: "var(--ink)",
+                color: "var(--a-text)",
                 opacity: 0.4,
                 letterSpacing: "0.06em",
               }}
@@ -84,7 +84,7 @@ function StatCard({
     <div className="admin-stat">
       <div
         className="admin-stat__accent"
-        style={{ backgroundColor: accent ?? "var(--ochre)" }}
+        style={{ backgroundColor: accent ?? "var(--a-accent)" }}
       />
       <div className="admin-stat__number">{value}</div>
       <div className="admin-stat__label">{label}</div>
@@ -144,25 +144,25 @@ export function AnalyticsPage() {
           label="Total page views"
           value={stats.totalViews}
           sub="Last 30 days"
-          accent="var(--ochre)"
+          accent="var(--a-accent)"
         />
         <StatCard
           label="Enquiries"
           value={stats.enquiries}
           sub="Plan Trip submissions"
-          accent="var(--highland)"
+          accent="var(--a-success)"
         />
         <StatCard
           label="Form starts"
           value={stats.formStarts}
           sub="Opened Plan Trip"
-          accent="var(--indigo)"
+          accent="var(--a-sidebar)"
         />
         <StatCard
           label="Conversion"
           value={`${stats.conversionRate}%`}
           sub="Starts → submissions"
-          accent="var(--sulphur)"
+          accent="var(--a-warning)"
         />
       </div>
 
@@ -183,7 +183,7 @@ export function AnalyticsPage() {
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: 12,
-                color: "var(--ink)",
+                color: "var(--a-text)",
                 opacity: 0.35,
                 fontStyle: "italic",
                 padding: "16px 0",
@@ -204,7 +204,7 @@ export function AnalyticsPage() {
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: 12,
-                color: "var(--ink)",
+                color: "var(--a-text)",
                 opacity: 0.35,
                 fontStyle: "italic",
                 padding: "16px 0",
@@ -229,7 +229,7 @@ export function AnalyticsPage() {
                       padding: "8px 0",
                       borderBottom:
                         i < stats.topPages.length - 1
-                          ? "1px solid rgba(18,17,16,0.06)"
+                          ? "1px solid var(--a-border)"
                           : "none",
                     }}
                   >
@@ -237,7 +237,7 @@ export function AnalyticsPage() {
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 12,
-                        color: "var(--ink)",
+                        color: "var(--a-text)",
                         opacity: 0.7,
                       }}
                     >
@@ -246,7 +246,7 @@ export function AnalyticsPage() {
                     <div
                       style={{
                         height: 6,
-                        backgroundColor: "rgba(18,17,16,0.08)",
+                        backgroundColor: "var(--a-border)",
                         position: "relative",
                         overflow: "hidden",
                       }}
@@ -259,7 +259,7 @@ export function AnalyticsPage() {
                           bottom: 0,
                           width: `${pct}%`,
                           backgroundColor:
-                            i === 0 ? "var(--ochre)" : "var(--indigo)",
+                            i === 0 ? "var(--a-accent)" : "var(--a-sidebar)",
                           opacity: i === 0 ? 1 : 0.5,
                         }}
                       />
@@ -268,7 +268,7 @@ export function AnalyticsPage() {
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 11,
-                        color: "var(--ink)",
+                        color: "var(--a-text)",
                         opacity: 0.5,
                         textAlign: "right",
                       }}
@@ -291,7 +291,7 @@ export function AnalyticsPage() {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 12,
-              color: "var(--ink)",
+              color: "var(--a-text)",
               opacity: 0.35,
               fontStyle: "italic",
               padding: "8px 0",
@@ -319,7 +319,7 @@ export function AnalyticsPage() {
                         style={{
                           fontFamily: "var(--font-body)",
                           fontSize: 10,
-                          color: "var(--ink)",
+                          color: "var(--a-text)",
                           opacity: 0.3,
                           minWidth: 16,
                         }}
@@ -330,7 +330,7 @@ export function AnalyticsPage() {
                         style={{
                           fontFamily: "var(--font-body)",
                           fontSize: 13,
-                          color: "var(--ink)",
+                          color: "var(--a-text)",
                         }}
                       >
                         {tourMap[t.tourId] ?? t.tourId}
@@ -342,7 +342,7 @@ export function AnalyticsPage() {
                       textAlign: "right",
                       fontFamily: "var(--font-body)",
                       fontSize: 13,
-                      color: "var(--ink)",
+                      color: "var(--a-text)",
                       opacity: 0.6,
                     }}
                   >

@@ -174,7 +174,7 @@ export function ContactAdminPage() {
                         fontSize: 9,
                         letterSpacing: "0.14em",
                         textTransform: "uppercase",
-                        color: "var(--ochre)",
+                        color: "var(--a-accent)",
                         minWidth: 80,
                         flexShrink: 0,
                       }}
@@ -188,9 +188,9 @@ export function ContactAdminPage() {
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 13,
-                        color: "var(--ink)",
+                        color: "var(--a-text)",
                         textDecoration: "none",
-                        borderBottom: "1px solid rgba(18,17,16,0.2)",
+                        borderBottom: "1px solid var(--a-border-md)",
                         paddingBottom: 1,
                         wordBreak: "break-all",
                       }}

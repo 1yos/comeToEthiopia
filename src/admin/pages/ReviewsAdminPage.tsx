@@ -114,8 +114,8 @@ export function ReviewsAdminPage() {
                   style={{
                     width: 40,
                     height: 40,
-                    backgroundColor: "var(--indigo)",
-                    color: "var(--paper)",
+                    backgroundColor: "var(--a-sidebar)",
+                    color: "var(--a-surface)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",

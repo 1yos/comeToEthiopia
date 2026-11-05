@@ -96,6 +96,54 @@ const PAGE_LABELS: Record<string, string> = {
   "/gallery": "Gallery",
 };
 
+/** Get daily view counts for the last N days. */
+export function getDailyViews(days: number): DailyViews[] {
+  try {
+    const now = Date.now();
+    const pageData: Record<string, number[]> = JSON.parse(
+      localStorage.getItem(PAGE_KEY) ?? "{}",
+    );
+    const allTimestamps = Object.values(pageData).flat();
+
+    return Array.from({ length: days }, (_, i) => {
+      const day = new Date(now - (days - 1 - i) * 24 * 60 * 60 * 1000);
+      const dayStart = new Date(day).setHours(0, 0, 0, 0);
+      const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+      const views = allTimestamps.filter(
+        (t) => t >= dayStart && t < dayEnd,
+      ).length;
+      return {
+        date:
+          days <= 14
+            ? day.toLocaleDateString("en-US", { weekday: "short" })
+            : day.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              }),
+        views,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Get total views for a specific number of days back. */
+export function getViewsForPeriod(days: number): number {
+  try {
+    const now = Date.now();
+    const cutoff = now - days * 24 * 60 * 60 * 1000;
+    const pageData: Record<string, number[]> = JSON.parse(
+      localStorage.getItem(PAGE_KEY) ?? "{}",
+    );
+    return Object.values(pageData)
+      .flat()
+      .filter((t) => t > cutoff).length;
+  } catch {
+    return 0;
+  }
+}
+
 export function getAnalytics(): AnalyticsSummary {
   try {
     const now = Date.now();

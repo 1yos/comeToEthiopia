@@ -130,12 +130,12 @@ export function FeaturedToursPage() {
           <div
             style={{
               padding: "14px 20px",
-              borderBottom: "1px solid rgba(18,17,16,0.08)",
+              borderBottom: "1px solid var(--a-border)",
               fontFamily: "var(--font-body)",
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "var(--ink)",
+              color: "var(--a-text)",
               opacity: 0.45,
             }}
           >
@@ -161,9 +161,9 @@ export function FeaturedToursPage() {
                     alignItems: "center",
                     gap: 12,
                     padding: "12px 16px",
-                    borderBottom: "1px solid rgba(18,17,16,0.06)",
+                    borderBottom: "1px solid var(--a-border)",
                     backgroundColor:
-                      dragIdx === idx ? "rgba(18,17,16,0.04)" : "transparent",
+                      dragIdx === idx ? "var(--a-border)" : "transparent",
                     cursor: "grab",
                     transition: "background-color 0.15s",
                   }}
@@ -187,7 +187,7 @@ export function FeaturedToursPage() {
                     style={{
                       fontFamily: "var(--font-body)",
                       fontSize: 10,
-                      color: "var(--ochre)",
+                      color: "var(--a-accent)",
                       minWidth: 20,
                       flexShrink: 0,
                     }}
@@ -208,7 +208,7 @@ export function FeaturedToursPage() {
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 13,
-                        color: "var(--ink)",
+                        color: "var(--a-text)",
                         lineHeight: 1.3,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -221,7 +221,7 @@ export function FeaturedToursPage() {
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 10,
-                        color: "var(--ink)",
+                        color: "var(--a-text)",
                         opacity: 0.4,
                         marginTop: 2,
                       }}
@@ -280,12 +280,12 @@ export function FeaturedToursPage() {
           <div
             style={{
               padding: "14px 20px",
-              borderBottom: "1px solid rgba(18,17,16,0.08)",
+              borderBottom: "1px solid var(--a-border)",
               fontFamily: "var(--font-body)",
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "var(--ink)",
+              color: "var(--a-text)",
               opacity: 0.45,
             }}
           >
@@ -307,7 +307,7 @@ export function FeaturedToursPage() {
                     alignItems: "center",
                     gap: 10,
                     padding: "10px 16px",
-                    borderBottom: "1px solid rgba(18,17,16,0.06)",
+                    borderBottom: "1px solid var(--a-border)",
                   }}
                 >
                   <img
@@ -321,7 +321,7 @@ export function FeaturedToursPage() {
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 12,
-                        color: "var(--ink)",
+                        color: "var(--a-text)",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -334,7 +334,7 @@ export function FeaturedToursPage() {
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 9,
-                        color: "var(--ink)",
+                        color: "var(--a-text)",
                         opacity: 0.4,
                         marginTop: 1,
                       }}

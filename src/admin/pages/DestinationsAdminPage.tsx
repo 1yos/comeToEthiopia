@@ -191,9 +191,9 @@ export function DestinationsAdminPage() {
               padding: "10px 14px",
               fontFamily: "var(--font-body)",
               fontSize: 11,
-              color: "var(--ink)",
+              color: "var(--a-text)",
               opacity: 0.45,
-              borderTop: "1px solid rgba(18,17,16,0.08)",
+              borderTop: "1px solid var(--a-border)",
             }}
           >
             Click anywhere on the map to drop a new destination pin.
@@ -392,14 +392,14 @@ export function DestinationsAdminPage() {
                 onChange={(e) =>
                   setEditing((p) => ({ ...p, featured: e.target.checked }))
                 }
-                style={{ width: 16, height: 16, accentColor: "var(--ochre)" }}
+                style={{ width: 16, height: 16, accentColor: "var(--a-accent)" }}
               />
               <label
                 htmlFor="dest-featured"
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 13,
-                  color: "var(--ink)",
+                  color: "var(--a-text)",
                   cursor: "pointer",
                 }}
               >

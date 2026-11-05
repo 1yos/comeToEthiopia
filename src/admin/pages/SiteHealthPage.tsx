@@ -173,9 +173,9 @@ const CATEGORY_LABELS = {
 };
 
 const SEVERITY_COLORS = {
-  warning: "var(--sulphur)",
-  ok: "var(--highland)",
-  info: "var(--indigo)",
+  warning: "var(--a-warning)",
+  ok: "var(--a-success)",
+  info: "var(--a-sidebar)",
 };
 
 export function SiteHealthPage() {
@@ -216,8 +216,8 @@ export function SiteHealthPage() {
                 style={{
                   display: "inline-block",
                   marginLeft: 10,
-                  backgroundColor: "var(--sulphur)",
-                  color: "var(--ink)",
+                  backgroundColor: "var(--a-warning)",
+                  color: "var(--a-text)",
                   fontFamily: "var(--font-body)",
                   fontSize: 11,
                   fontWeight: 700,
@@ -282,7 +282,7 @@ export function SiteHealthPage() {
                   padding: "12px 20px",
                   borderBottom:
                     i < filtered.length - 1
-                      ? "1px solid rgba(18,17,16,0.06)"
+                      ? "1px solid var(--a-border)"
                       : "none",
                   alignItems: "flex-start",
                 }}
@@ -305,7 +305,7 @@ export function SiteHealthPage() {
                     style={{
                       fontFamily: "var(--font-body)",
                       fontSize: 13,
-                      color: "var(--ink)",
+                      color: "var(--a-text)",
                       lineHeight: 1.4,
                     }}
                   >
@@ -316,7 +316,7 @@ export function SiteHealthPage() {
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: 11,
-                        color: "var(--ink)",
+                        color: "var(--a-text)",
                         opacity: 0.5,
                         marginTop: 3,
                         lineHeight: 1.4,
@@ -331,7 +331,7 @@ export function SiteHealthPage() {
                         {
                           fontFamily: "var(--font-body)",
                           fontSize: 10,
-                          color: "var(--ochre)",
+                          color: "var(--a-accent)",
                           opacity: 0.7,
                           marginTop: 2,
                           fontStyle: "italic",

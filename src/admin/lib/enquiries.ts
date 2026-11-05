@@ -15,7 +15,8 @@ export interface Enquiry {
   dates: string;
   groupSize: string | null;
   notes: string;
-  status: "new" | "replied" | "archived";
+  status: "new" | "in-progress" | "replied" | "closed" | "archived";
+  internalNotes?: string;
 }
 
 const KEY = "cte-enquiries";
@@ -28,11 +29,12 @@ export function getEnquiries(): Enquiry[] {
   }
 }
 
-export function updateEnquiryStatus(id: string, status: Enquiry["status"]): void {
+export function updateEnquiryStatus(
+  id: string,
+  status: Enquiry["status"],
+): void {
   try {
-    const all = getEnquiries().map((e) =>
-      e.id === id ? { ...e, status } : e,
-    );
+    const all = getEnquiries().map((e) => (e.id === id ? { ...e, status } : e));
     localStorage.setItem(KEY, JSON.stringify(all));
   } catch {
     /* ignore */
@@ -49,15 +51,46 @@ export function deleteEnquiry(id: string): void {
 }
 
 export function getUnreadCount(): number {
-  return getEnquiries().filter((e) => e.status === "new").length;
+  return getEnquiries().filter(
+    (e) => e.status === "new" || e.status === "in-progress",
+  ).length;
 }
 
-export function exportEnquiriesCSV(): void {
-  const all = getEnquiries();
+export function markAllRead(): void {
+  try {
+    const all = getEnquiries().map((e) =>
+      e.status === "new" ? { ...e, status: "in-progress" as const } : e,
+    );
+    localStorage.setItem(KEY, JSON.stringify(all));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function updateEnquiryNotes(id: string, notes: string): void {
+  try {
+    const all = getEnquiries().map((e) =>
+      e.id === id ? { ...e, internalNotes: notes } : e,
+    );
+    localStorage.setItem(KEY, JSON.stringify(all));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function exportEnquiriesCSV(filtered?: Enquiry[]): void {
+  const all = filtered ?? getEnquiries();
   if (all.length === 0) return;
 
   const headers = [
-    "Date", "Name", "Email", "Tours", "Dates", "Group", "Notes", "Status",
+    "Date",
+    "Name",
+    "Email",
+    "Tours",
+    "Dates",
+    "Group",
+    "Notes",
+    "Status",
   ];
 
   const rows = all.map((e) => [

@@ -304,10 +304,10 @@ export function TourEditPage() {
                           letterSpacing: "0.06em",
                           padding: "5px 12px",
                           backgroundColor: active
-                            ? "var(--ink)"
+                            ? "var(--a-text)"
                             : "transparent",
-                          color: active ? "var(--paper)" : "var(--ink)",
-                          border: `1px solid ${active ? "var(--ink)" : "rgba(18,17,16,0.2)"}`,
+                          color: active ? "var(--a-surface)" : "var(--a-text)",
+                          border: `1px solid ${active ? "var(--a-text)" : "var(--a-border-md)"}`,
                           cursor: "pointer",
                           textTransform: "capitalize",
                         }}
@@ -369,7 +369,7 @@ export function TourEditPage() {
                 <div
                   key={i}
                   style={{
-                    borderLeft: "2px solid var(--ochre)",
+                    borderLeft: "2px solid var(--a-accent)",
                     paddingLeft: 14,
                     marginBottom: 20,
                   }}
@@ -380,7 +380,7 @@ export function TourEditPage() {
                       fontSize: 10,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
-                      color: "var(--ochre)",
+                      color: "var(--a-accent)",
                       marginBottom: 8,
                     }}
                   >
@@ -492,7 +492,7 @@ export function TourEditPage() {
                     objectPosition: "center 35%",
                     display: "block",
                     marginBottom: 12,
-                    backgroundColor: "var(--indigo)",
+                    backgroundColor: "var(--a-sidebar)",
                   }}
                 />
               )}
