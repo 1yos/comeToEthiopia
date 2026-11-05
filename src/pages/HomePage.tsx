@@ -27,6 +27,25 @@ export function HomePage({
     title: meta.title,
     description: meta.description,
     canonical: "/",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "TravelAgency",
+      name: "Come to Ethiopia Tours",
+      description: meta.description,
+      url: "https://cometoethiopiatours.com",
+      telephone: "+251903182009",
+      email: "cometoethiopiatours@gmail.com",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Addis Ababa",
+        addressCountry: "ET",
+      },
+      sameAs: [
+        "https://www.instagram.com/cometoethiopiatours/",
+        "https://www.youtube.com/@CometoEthiopiatours",
+        "https://www.tiktok.com/@cometo.ethiopia.tours",
+      ],
+    },
   });
 
   return (
