@@ -1,183 +1,268 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { tours } from "@/data/tours";
 import { destinations } from "@/data/destinations";
 import { getEnquiries, getUnreadCount, type Enquiry } from "../lib/enquiries";
 import { getAnalytics, type AnalyticsSummary } from "../lib/analytics";
 
-// ── Smooth SVG sparkline ──────────────────────────────────────────────────────
-function Sparkline({
+// ── Smooth area chart ─────────────────────────────────────────────────────────
+function AreaChart({
   data,
-  width = 280,
-  height = 56,
+  labels,
+  height = 180,
   color = "var(--ochre)",
 }: {
   data: number[];
-  width?: number;
+  labels: string[];
   height?: number;
   color?: string;
 }) {
-  if (data.length < 2) {
-    return (
-      <svg width={width} height={height} aria-hidden="true">
-        <line
-          x1={0}
-          y1={height / 2}
-          x2={width}
-          y2={height / 2}
-          stroke={color}
-          strokeWidth={1.5}
-          opacity={0.2}
-          strokeDasharray="4 4"
-        />
-      </svg>
-    );
-  }
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [svgWidth, setSvgWidth] = useState(800);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const obs = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (w) setSvgWidth(w);
+    });
+    if (svgRef.current?.parentElement)
+      obs.observe(svgRef.current.parentElement);
+    return () => obs.disconnect();
+  }, []);
 
   const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
-  const range = max - min || 1;
-  const pad = 4;
-  const w = width - pad * 2;
-  const h = height - pad * 2;
+  const padT = 16;
+  const padB = 28;
+  const padL = 8;
+  const padR = 8;
+  const chartW = svgWidth - padL - padR;
+  const chartH = height - padT - padB;
+  const n = data.length;
 
-  const points = data.map((v, i) => ({
-    x: pad + (i / (data.length - 1)) * w,
-    y: pad + h - ((v - min) / range) * h,
-  }));
+  const px = (i: number) => padL + (i / (n - 1)) * chartW;
+  const py = (v: number) => padT + chartH - (v / max) * chartH;
 
-  // Smooth curve using cubic bezier control points
-  const d = points.reduce((acc, pt, i) => {
-    if (i === 0) return `M ${pt.x},${pt.y}`;
-    const prev = points[i - 1];
-    const cpx = (prev.x + pt.x) / 2;
-    return `${acc} C ${cpx},${prev.y} ${cpx},${pt.y} ${pt.x},${pt.y}`;
+  // Smooth bezier path
+  const linePath = data.reduce((acc, v, i) => {
+    if (i === 0) return `M ${px(i)},${py(v)}`;
+    const x0 = px(i - 1),
+      y0 = py(data[i - 1]);
+    const x1 = px(i),
+      y1 = py(v);
+    const cpx = (x0 + x1) / 2;
+    return `${acc} C ${cpx},${y0} ${cpx},${y1} ${x1},${y1}`;
   }, "");
 
-  // Fill area under curve
-  const fillD = `${d} L ${points[points.length - 1].x},${height} L ${points[0].x},${height} Z`;
+  const areaPath = `${linePath} L ${px(n - 1)},${padT + chartH} L ${px(0)},${padT + chartH} Z`;
 
   return (
-    <svg
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      aria-hidden="true"
-      style={{ overflow: "visible" }}
-    >
-      <defs>
-        <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.18" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {/* Fill */}
-      <path d={fillD} fill="url(#spark-fill)" />
-      {/* Line */}
-      <path
-        d={d}
-        fill="none"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Last point dot */}
-      <circle
-        cx={points[points.length - 1].x}
-        cy={points[points.length - 1].y}
-        r={3}
-        fill={color}
-      />
-    </svg>
+    <div style={{ position: "relative", width: "100%" }}>
+      <svg
+        ref={svgRef}
+        width="100%"
+        height={height}
+        viewBox={`0 0 ${svgWidth} ${height}`}
+        preserveAspectRatio="none"
+        aria-label="Page views chart"
+        style={{ display: "block", overflow: "visible" }}
+      >
+        <defs>
+          <linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* Horizontal grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+          <line
+            key={f}
+            x1={padL}
+            x2={svgWidth - padR}
+            y1={padT + chartH * (1 - f)}
+            y2={padT + chartH * (1 - f)}
+            stroke="rgba(18,17,16,0.06)"
+            strokeWidth={1}
+          />
+        ))}
+
+        {/* Area fill */}
+        <path d={areaPath} fill="url(#area-fill)" />
+
+        {/* Line */}
+        <path
+          d={linePath}
+          fill="none"
+          stroke={color}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Data points + hover targets */}
+        {data.map((v, i) => (
+          <g key={i}>
+            {/* Invisible wide hit area */}
+            <rect
+              x={padL + (i / (n - 1)) * chartW - 20}
+              y={padT}
+              width={40}
+              height={chartH}
+              fill="transparent"
+              onMouseEnter={() => setHoverIndex(i)}
+              onMouseLeave={() => setHoverIndex(null)}
+              style={{ cursor: "default" }}
+            />
+            {/* Dot */}
+            <circle
+              cx={px(i)}
+              cy={py(v)}
+              r={hoverIndex === i ? 5 : v > 0 ? 3 : 0}
+              fill={color}
+              style={{ transition: "r 0.15s ease" }}
+            />
+            {/* Vertical hover line */}
+            {hoverIndex === i && (
+              <line
+                x1={px(i)}
+                x2={px(i)}
+                y1={padT}
+                y2={padT + chartH}
+                stroke={color}
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                opacity={0.4}
+              />
+            )}
+            {/* Hover tooltip */}
+            {hoverIndex === i && (
+              <g>
+                <rect
+                  x={Math.min(Math.max(px(i) - 22, padL), svgWidth - padR - 44)}
+                  y={py(v) - 28}
+                  width={44}
+                  height={20}
+                  fill="var(--ink)"
+                  rx={2}
+                />
+                <text
+                  x={Math.min(Math.max(px(i), padL + 22), svgWidth - padR - 22)}
+                  y={py(v) - 14}
+                  textAnchor="middle"
+                  fill="white"
+                  fontSize={11}
+                  fontFamily="var(--font-body)"
+                >
+                  {v}
+                </text>
+              </g>
+            )}
+            {/* Day label */}
+            <text
+              x={px(i)}
+              y={height - 4}
+              textAnchor="middle"
+              fill="var(--ink)"
+              opacity={0.35}
+              fontSize={10}
+              fontFamily="var(--font-body)"
+            >
+              {labels[i]}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
   );
 }
 
-// ── Stat tile with sparkline ──────────────────────────────────────────────────
-function StatTile({
+// ── Stat card ─────────────────────────────────────────────────────────────────
+function StatCard({
   label,
   value,
   sub,
-  data,
-  color,
+  accent,
   href,
+  large = false,
 }: {
   label: string;
   value: string | number;
   sub?: string;
-  data?: number[];
-  color?: string;
-  href?: string;
+  accent: string;
+  href: string;
+  large?: boolean;
 }) {
-  const inner = (
-    <div
+  return (
+    <Link
+      to={href}
       style={{
-        backgroundColor: "white",
-        border: "1px solid rgba(18,17,16,0.08)",
-        padding: "20px 20px 16px",
+        textDecoration: "none",
         display: "flex",
         flexDirection: "column",
-        gap: 2,
-        transition: "border-color 0.2s, box-shadow 0.2s",
-        height: "100%",
+        backgroundColor: "white",
+        border: "1px solid rgba(18,17,16,0.07)",
+        padding: large ? "28px 28px 24px" : "22px 22px 18px",
+        gap: 8,
+        transition:
+          "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+        cursor: "pointer",
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.borderColor =
-          color ?? "var(--ochre)";
-        (e.currentTarget as HTMLElement).style.boxShadow =
-          "0 4px 16px rgba(18,17,16,0.07)";
+        const el = e.currentTarget as HTMLElement;
+        el.style.transform = "translateY(-2px)";
+        el.style.boxShadow = "0 8px 32px rgba(18,17,16,0.10)";
+        el.style.borderColor = accent;
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.borderColor =
-          "rgba(18,17,16,0.08)";
-        (e.currentTarget as HTMLElement).style.boxShadow = "none";
+        const el = e.currentTarget as HTMLElement;
+        el.style.transform = "translateY(0)";
+        el.style.boxShadow = "none";
+        el.style.borderColor = "rgba(18,17,16,0.07)";
       }}
     >
-      {/* Top row: label + accent line */}
+      {/* Top accent bar */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 10,
+          width: 32,
+          height: 3,
+          backgroundColor: accent,
+          marginBottom: 4,
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Label */}
+      <div
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: 9,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "var(--ink)",
+          opacity: 0.45,
         }}
       >
-        <div
-          style={{
-            width: 16,
-            height: 3,
-            backgroundColor: color ?? "var(--ochre)",
-          }}
-          aria-hidden="true"
-        />
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 9,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "var(--ink)",
-            opacity: 0.45,
-          }}
-        >
-          {label}
-        </span>
+        {label}
       </div>
 
       {/* Value */}
       <div
         style={{
           fontFamily: "var(--font-display)",
-          fontVariationSettings: '"opsz" 72, "wght" 700',
-          fontSize: "clamp(2rem, 3.5vw, 3rem)",
+          fontVariationSettings: '"opsz" 72, "wght" 800',
+          fontSize: large
+            ? "clamp(2.8rem, 4vw, 4rem)"
+            : "clamp(2rem, 3vw, 3rem)",
           color: "var(--ink)",
           lineHeight: 1,
-          letterSpacing: "-0.03em",
+          letterSpacing: "-0.04em",
         }}
       >
         {value}
       </div>
 
+      {/* Sub */}
       {sub && (
         <div
           style={{
@@ -185,73 +270,51 @@ function StatTile({
             fontSize: 11,
             color: "var(--ink)",
             opacity: 0.38,
-            marginTop: 4,
+            marginTop: 2,
           }}
         >
           {sub}
         </div>
       )}
-
-      {/* Sparkline */}
-      {data && data.length > 1 && (
-        <div style={{ marginTop: 16 }}>
-          <Sparkline
-            data={data}
-            color={color ?? "var(--ochre)"}
-            width={220}
-            height={44}
-          />
-        </div>
-      )}
-    </div>
+    </Link>
   );
-
-  if (href) {
-    return (
-      <Link to={href} style={{ textDecoration: "none" }}>
-        {inner}
-      </Link>
-    );
-  }
-  return inner;
 }
 
 // ── Enquiry row ───────────────────────────────────────────────────────────────
 function EnquiryRow({ enq }: { enq: Enquiry }) {
-  const STATUS_COLORS: Record<string, string> = {
-    new: "var(--ochre)",
-    replied: "var(--highland)",
-    archived: "rgba(18,17,16,0.25)",
-  };
-
-  const timeAgo = (iso: string) => {
-    const ms = Date.now() - new Date(iso).getTime();
-    const m = Math.floor(ms / 60000);
-    const h = Math.floor(ms / 3600000);
-    const d = Math.floor(ms / 86400000);
-    if (m < 1) return "just now";
-    if (m < 60) return `${m}m ago`;
-    if (h < 24) return `${h}h ago`;
-    return `${d}d ago`;
+  const ago = (iso: string) => {
+    const s = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (s < 60) return "just now";
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    return `${Math.floor(s / 86400)}d ago`;
   };
 
   return (
     <Link
       to="/admin/enquiries"
       style={{
-        display: "flex",
+        display: "grid",
+        gridTemplateColumns: "36px 1fr auto",
         alignItems: "center",
         gap: 12,
-        padding: "11px 0",
-        borderBottom: "1px solid rgba(18,17,16,0.06)",
+        padding: "12px 0",
+        borderBottom: "1px solid rgba(18,17,16,0.05)",
         textDecoration: "none",
+        transition: "background-color 0.15s",
       }}
+      onMouseEnter={(e) =>
+        ((e.currentTarget as HTMLElement).style.backgroundColor =
+          "rgba(18,17,16,0.02)")
+      }
+      onMouseLeave={(e) =>
+        ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")
+      }
     >
-      {/* Avatar */}
       <div
         style={{
-          width: 32,
-          height: 32,
+          width: 36,
+          height: 36,
           backgroundColor:
             enq.status === "new" ? "var(--ochre)" : "var(--indigo)",
           color: "var(--paper)",
@@ -259,16 +322,15 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "var(--font-body)",
-          fontSize: 11,
-          fontWeight: 600,
+          fontSize: 12,
+          fontWeight: 700,
           flexShrink: 0,
         }}
         aria-hidden="true"
       >
         {enq.name.slice(0, 2).toUpperCase()}
       </div>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ minWidth: 0 }}>
         <div
           style={{
             fontFamily: "var(--font-body)",
@@ -287,11 +349,11 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
             fontFamily: "var(--font-body)",
             fontSize: 11,
             color: "var(--ink)",
-            opacity: 0.45,
+            opacity: 0.4,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
-            marginTop: 1,
+            marginTop: 2,
           }}
         >
           {enq.selectedTourNames[0] ?? enq.tourFreeText ?? "No specific tour"}
@@ -299,7 +361,6 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
             ` +${enq.selectedTourNames.length - 1}`}
         </div>
       </div>
-
       <div style={{ textAlign: "right", flexShrink: 0 }}>
         <div
           style={{
@@ -307,8 +368,13 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
             fontSize: 9,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: STATUS_COLORS[enq.status],
-            marginBottom: 2,
+            color:
+              enq.status === "new"
+                ? "var(--ochre)"
+                : enq.status === "replied"
+                  ? "var(--highland)"
+                  : "rgba(18,17,16,0.3)",
+            marginBottom: 3,
           }}
         >
           {enq.status}
@@ -318,10 +384,10 @@ function EnquiryRow({ enq }: { enq: Enquiry }) {
             fontFamily: "var(--font-body)",
             fontSize: 10,
             color: "var(--ink)",
-            opacity: 0.3,
+            opacity: 0.28,
           }}
         >
-          {timeAgo(enq.timestamp)}
+          {ago(enq.timestamp)}
         </div>
       </div>
     </Link>
@@ -339,118 +405,310 @@ export function DashboardPage() {
     const all = getEnquiries();
     setEnquiries(all);
     setUnread(getUnreadCount());
+    const iv = setInterval(() => {
+      setStats(getAnalytics());
+      setEnquiries(getEnquiries());
+      setUnread(getUnreadCount());
+    }, 20000);
+    return () => clearInterval(iv);
   }, []);
 
   const viewData = stats?.last7Days.map((d) => d.views) ?? Array(7).fill(0);
+  const viewLabels = stats?.last7Days.map((d) => d.date) ?? [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ];
   const totalViews = stats?.totalViews ?? 0;
-  const viewsToday = viewData[viewData.length - 1] ?? 0;
+  const todayViews = viewData[viewData.length - 1] ?? 0;
+
+  const today = new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* ── Header ── */}
-      <div className="admin-page-header" style={{ marginBottom: 0 }}>
-        <div>
-          <h1 className="admin-page-title">Dashboard</h1>
-          <p className="admin-page-sub">
-            {new Date().toLocaleDateString("en-GB", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-        </div>
-        <a
-          href="/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="admin-btn admin-btn--secondary"
-        >
-          View live site →
-        </a>
-      </div>
-
-      {/* ── Stat tiles row ── */}
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      {/* ── Dark hero header ── */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-          gap: 10,
+          backgroundColor: "var(--indigo)",
+          margin: "-32px -32px 32px",
+          padding: "36px 32px 40px",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <StatTile
-          label="Page views"
-          value={totalViews}
-          sub={`${viewsToday} today`}
-          data={viewData}
-          color="var(--ochre)"
-          href="/admin/analytics"
-        />
-        <StatTile
-          label="Enquiries"
-          value={enquiries.length}
-          sub={unread > 0 ? `${unread} unread` : "All read"}
-          data={Array(7)
-            .fill(0)
-            .map((_, i) => {
-              const day = Date.now() - (6 - i) * 86400000;
-              return enquiries.filter((e) => {
-                const t = new Date(e.timestamp).getTime();
-                return t >= day && t < day + 86400000;
-              }).length;
-            })}
-          color="var(--highland)"
-          href="/admin/enquiries"
-        />
-        <StatTile
-          label="Tours"
-          value={tours.length}
-          sub={`${tours.filter((t) => t.difficulty === "demanding").length} demanding`}
-          color="var(--indigo)"
-          href="/admin/tours"
-        />
-        <StatTile
-          label="Destinations"
-          value={destinations.length}
-          sub={`${destinations.filter((d) => d.featured).length} featured`}
-          color="var(--sulphur)"
-          href="/admin/destinations"
-        />
-        <StatTile
-          label="Form conversion"
-          value={`${stats?.conversionRate ?? 0}%`}
-          sub={`${stats?.formStarts ?? 0} form starts`}
-          data={viewData.map((v) => (v > 0 ? Math.random() * 30 : 0))}
-          color="var(--ochre)"
-          href="/admin/analytics"
-        />
+        {/* Ghost Ge'ez watermark */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            right: -24,
+            top: -20,
+            fontFamily: "var(--font-geez)",
+            fontSize: 160,
+            lineHeight: 1,
+            color: "var(--paper)",
+            opacity: 0.04,
+            userSelect: "none",
+            pointerEvents: "none",
+          }}
+        >
+          ፊደል {/* TODO-REVIEW */}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 8,
+              }}
+            >
+              <span
+                style={{
+                  width: 20,
+                  height: 1,
+                  backgroundColor: "var(--ochre)",
+                  display: "block",
+                }}
+                aria-hidden="true"
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 9,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  color: "var(--ochre)",
+                  opacity: 0.8,
+                }}
+              >
+                Come to Ethiopia Tours
+              </span>
+            </div>
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontVariationSettings: '"opsz" 72, "wght" 700',
+                fontSize: "clamp(1.8rem, 3vw, 2.8rem)",
+                color: "var(--paper)",
+                lineHeight: 1.0,
+                letterSpacing: "-0.025em",
+                marginBottom: 8,
+              }}
+            >
+              Dashboard
+            </h1>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 12,
+                color: "var(--paper)",
+                opacity: 0.4,
+              }}
+            >
+              {today}
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {unread > 0 && (
+              <Link
+                to="/admin/enquiries"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 11,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "var(--ink)",
+                  backgroundColor: "var(--ochre)",
+                  padding: "8px 16px",
+                  textDecoration: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    backgroundColor: "var(--ink)",
+                    display: "inline-block",
+                  }}
+                  aria-hidden="true"
+                />
+                {unread} new {unread === 1 ? "enquiry" : "enquiries"}
+              </Link>
+            )}
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--paper)",
+                border: "1px solid rgba(241,234,217,0.25)",
+                padding: "8px 16px",
+                textDecoration: "none",
+                transition: "border-color 0.2s",
+              }}
+              onMouseEnter={(e) =>
+                ((e.currentTarget as HTMLElement).style.borderColor =
+                  "var(--ochre)")
+              }
+              onMouseLeave={(e) =>
+                ((e.currentTarget as HTMLElement).style.borderColor =
+                  "rgba(241,234,217,0.25)")
+              }
+            >
+              View site →
+            </a>
+          </div>
+        </div>
+
+        {/* Hero stat row — sits inside the dark header */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+            gap: 2,
+            marginTop: 32,
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          {[
+            {
+              label: "Page views",
+              value: totalViews,
+              sub: `${todayViews} today`,
+              accent: "var(--ochre)",
+            },
+            {
+              label: "Enquiries",
+              value: enquiries.length,
+              sub: unread > 0 ? `${unread} unread` : "All read",
+              accent: "var(--highland)",
+            },
+            {
+              label: "Tours",
+              value: tours.length,
+              sub: `${tours.filter((t) => t.difficulty === "easy").length} easy · ${tours.filter((t) => t.difficulty === "moderate").length} mod`,
+              accent: "rgba(241,234,217,0.5)",
+            },
+            {
+              label: "Destinations",
+              value: destinations.length,
+              sub: `${destinations.filter((d) => d.featured).length} featured`,
+              accent: "var(--sulphur)",
+            },
+            {
+              label: "Conversion",
+              value: `${stats?.conversionRate ?? 0}%`,
+              sub: `${stats?.formStarts ?? 0} starts`,
+              accent: "var(--ochre)",
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              style={{
+                backgroundColor: "rgba(241,234,217,0.06)",
+                padding: "16px 18px",
+                borderLeft: `3px solid ${s.accent}`,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 8,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: "var(--paper)",
+                  opacity: 0.45,
+                  marginBottom: 8,
+                }}
+              >
+                {s.label}
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontVariationSettings: '"opsz" 72, "wght" 800',
+                  fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)",
+                  color: "var(--paper)",
+                  lineHeight: 1,
+                  letterSpacing: "-0.04em",
+                }}
+              >
+                {s.value}
+              </div>
+              {s.sub && (
+                <div
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 10,
+                    color: "var(--paper)",
+                    opacity: 0.35,
+                    marginTop: 5,
+                  }}
+                >
+                  {s.sub}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* ── Two-column lower section ── */}
+      {/* ── Main grid ── */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr clamp(280px, 32%, 360px)",
+          gridTemplateColumns: "1fr clamp(300px, 32%, 380px)",
           gap: 20,
           alignItems: "start",
         }}
       >
-        {/* ── Left: views chart + recent tours ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* Views chart card */}
+        {/* ── Left column ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Analytics chart card */}
           <div
             style={{
               backgroundColor: "white",
-              border: "1px solid rgba(18,17,16,0.08)",
-              padding: "20px 24px",
+              border: "1px solid rgba(18,17,16,0.07)",
+              padding: "24px 28px 20px",
             }}
           >
+            {/* Chart header */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "flex-end",
-                marginBottom: 20,
+                alignItems: "flex-start",
+                marginBottom: 24,
               }}
             >
               <div>
@@ -458,26 +716,53 @@ export function DashboardPage() {
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: 9,
-                    letterSpacing: "0.16em",
+                    letterSpacing: "0.18em",
                     textTransform: "uppercase",
                     color: "var(--ink)",
-                    opacity: 0.45,
+                    opacity: 0.4,
                     marginBottom: 6,
                   }}
                 >
                   Page views — last 7 days
                 </div>
                 <div
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontVariationSettings: '"opsz" 48, "wght" 700',
-                    fontSize: "2rem",
-                    color: "var(--ink)",
-                    lineHeight: 1,
-                    letterSpacing: "-0.025em",
-                  }}
+                  style={{ display: "flex", alignItems: "baseline", gap: 12 }}
                 >
-                  {totalViews}
+                  <span
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontVariationSettings: '"opsz" 72, "wght" 800',
+                      fontSize: "2.4rem",
+                      color: "var(--ink)",
+                      lineHeight: 1,
+                      letterSpacing: "-0.04em",
+                    }}
+                  >
+                    {totalViews}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: 12,
+                      color: "var(--ink)",
+                      opacity: 0.4,
+                    }}
+                  >
+                    total views
+                  </span>
+                  {todayViews > 0 && (
+                    <span
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: 11,
+                        color: "var(--highland)",
+                        backgroundColor: "rgba(63,91,58,0.1)",
+                        padding: "2px 8px",
+                      }}
+                    >
+                      +{todayViews} today
+                    </span>
+                  )}
                 </div>
               </div>
               <Link
@@ -485,154 +770,141 @@ export function DashboardPage() {
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 10,
-                  letterSpacing: "0.1em",
+                  letterSpacing: "0.12em",
                   textTransform: "uppercase",
                   color: "var(--ochre)",
                   textDecoration: "none",
                   opacity: 0.8,
+                  marginTop: 4,
                 }}
               >
                 Full analytics →
               </Link>
             </div>
 
-            {/* Multi-line chart — each day as a column with label */}
             {totalViews === 0 ? (
               <div
                 style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 12,
-                  color: "var(--ink)",
-                  opacity: 0.3,
-                  fontStyle: "italic",
-                  padding: "12px 0",
+                  height: 180,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px dashed rgba(18,17,16,0.1)",
+                  flexDirection: "column",
+                  gap: 8,
                 }}
               >
-                No page views recorded yet. Browse the public site to start
-                tracking.
-              </div>
-            ) : (
-              <div style={{ position: "relative" }}>
-                {/* Y-axis guide lines */}
-                {[0, 25, 50, 75, 100].map((pct) => (
-                  <div
-                    key={pct}
-                    aria-hidden="true"
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      right: 0,
-                      bottom: `calc(${pct}% + 24px)`,
-                      height: 1,
-                      backgroundColor: "rgba(18,17,16,0.05)",
-                    }}
-                  />
-                ))}
-
-                {/* Chart area */}
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "flex-end",
-                    gap: 6,
-                    height: 120,
-                    paddingBottom: 24,
-                    position: "relative",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13,
+                    color: "var(--ink)",
+                    opacity: 0.35,
                   }}
                 >
-                  {(stats?.last7Days ?? []).map((d, i) => {
-                    const max = Math.max(
-                      ...(stats?.last7Days.map((x) => x.views) ?? [1]),
-                      1,
-                    );
-                    const pct = Math.max(
-                      (d.views / max) * 100,
-                      d.views > 0 ? 4 : 0,
-                    );
-                    const isToday = i === 6;
-                    return (
-                      <div
-                        key={d.date}
-                        style={{
-                          flex: 1,
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          height: "100%",
-                          justifyContent: "flex-end",
-                          gap: 4,
-                        }}
-                        title={`${d.date}: ${d.views} views`}
-                      >
-                        <div
-                          style={{
-                            fontFamily: "var(--font-body)",
-                            fontSize: 9,
-                            color: isToday ? "var(--ochre)" : "var(--ink)",
-                            opacity: isToday ? 0.9 : 0.35,
-                            height: 14,
-                            display: "flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          {d.views > 0 ? d.views : ""}
-                        </div>
-                        <div
-                          style={{
-                            width: "100%",
-                            height: `${pct}%`,
-                            backgroundColor: isToday
-                              ? "var(--ochre)"
-                              : "var(--indigo)",
-                            opacity: isToday ? 1 : 0.35,
-                            transition: "height 0.5s ease",
-                            position: "relative",
-                          }}
-                        >
-                          {/* Highlight cap on top */}
-                          {d.views > 0 && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                height: 2,
-                                backgroundColor: isToday
-                                  ? "var(--ochre)"
-                                  : "var(--indigo)",
-                                opacity: isToday ? 1 : 0.7,
-                              }}
-                            />
-                          )}
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: "var(--font-body)",
-                            fontSize: 9,
-                            color: isToday ? "var(--ochre)" : "var(--ink)",
-                            opacity: isToday ? 1 : 0.4,
-                            letterSpacing: "0.04em",
-                            height: 14,
-                            display: "flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          {d.date}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  No page views recorded yet.
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 11,
+                    color: "var(--ink)",
+                    opacity: 0.25,
+                  }}
+                >
+                  Visit the public site to start tracking.
                 </div>
               </div>
+            ) : (
+              <AreaChart
+                data={viewData}
+                labels={viewLabels}
+                height={180}
+                color="var(--ochre)"
+              />
             )}
+
+            {/* Top pages strip */}
+            {(stats?.topPages.length ?? 0) > 0 && (
+              <div
+                style={{
+                  marginTop: 20,
+                  paddingTop: 16,
+                  borderTop: "1px solid rgba(18,17,16,0.06)",
+                  display: "flex",
+                  gap: 16,
+                  flexWrap: "wrap",
+                }}
+              >
+                {stats!.topPages.slice(0, 5).map((p) => (
+                  <div
+                    key={p.path}
+                    style={{ display: "flex", flexDirection: "column", gap: 3 }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: 12,
+                        color: "var(--ink)",
+                        opacity: 0.7,
+                      }}
+                    >
+                      {p.label}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontVariationSettings: '"opsz" 14, "wght" 700',
+                        fontSize: "1.1rem",
+                        color: "var(--ink)",
+                        letterSpacing: "-0.02em",
+                      }}
+                    >
+                      {p.views}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Stat cards row */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "clamp(120px, 2fr, 1fr) clamp(100px, 1.5fr, 1fr) clamp(90px, 1fr, 1fr)",
+              gap: 10,
+            }}
+          >
+            <StatCard
+              label="Tours"
+              value={tours.length}
+              sub={`${tours.filter((t) => t.difficulty === "demanding").length} demanding`}
+              accent="var(--indigo)"
+              href="/admin/tours"
+            />
+            <StatCard
+              label="Destinations"
+              value={destinations.length}
+              sub={`${destinations.filter((d) => d.featured).length} featured`}
+              accent="var(--sulphur)"
+              href="/admin/destinations"
+            />
+            <StatCard
+              label="Conversion"
+              value={`${stats?.conversionRate ?? 0}%`}
+              sub={`${stats?.formStarts ?? 0} form starts`}
+              accent="var(--highland)"
+              href="/admin/analytics"
+            />
           </div>
 
           {/* Recent tours */}
           <div
             style={{
               backgroundColor: "white",
-              border: "1px solid rgba(18,17,16,0.08)",
+              border: "1px solid rgba(18,17,16,0.07)",
             }}
           >
             <div
@@ -648,7 +920,7 @@ export function DashboardPage() {
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 9,
-                  letterSpacing: "0.16em",
+                  letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   color: "var(--ink)",
                   opacity: 0.45,
@@ -673,7 +945,7 @@ export function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {tours.slice(0, 6).map((tour) => (
+                {tours.slice(0, 5).map((tour) => (
                   <tr key={tour.id}>
                     <td>
                       <div
@@ -693,7 +965,6 @@ export function DashboardPage() {
                             fontFamily: "var(--font-body)",
                             fontSize: 12,
                             color: "var(--ink)",
-                            lineHeight: 1.3,
                           }}
                         >
                           {tour.name.split("—")[0].trim()}
@@ -730,38 +1001,44 @@ export function DashboardPage() {
                 ))}
               </tbody>
             </table>
-            {tours.length > 6 && (
-              <div
+            <div
+              style={{
+                padding: "12px 20px",
+                borderTop: "1px solid rgba(18,17,16,0.06)",
+              }}
+            >
+              <Link
+                to="/admin/tours"
                 style={{
-                  padding: "12px 20px",
-                  borderTop: "1px solid rgba(18,17,16,0.06)",
+                  fontFamily: "var(--font-body)",
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "var(--ochre)",
+                  textDecoration: "none",
                 }}
               >
-                <Link
-                  to="/admin/tours"
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 10,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    color: "var(--ochre)",
-                    textDecoration: "none",
-                  }}
-                >
-                  View all {tours.length} tours →
-                </Link>
-              </div>
-            )}
+                View all {tours.length} tours →
+              </Link>
+            </div>
           </div>
         </div>
 
         {/* ── Right column ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* Recent enquiries */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            position: "sticky",
+            top: 72,
+          }}
+        >
+          {/* Enquiries panel */}
           <div
             style={{
               backgroundColor: "white",
-              border: "1px solid rgba(18,17,16,0.08)",
+              border: "1px solid rgba(18,17,16,0.07)",
             }}
           >
             <div
@@ -773,12 +1050,12 @@ export function DashboardPage() {
                 borderBottom: "1px solid rgba(18,17,16,0.06)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: 9,
-                    letterSpacing: "0.16em",
+                    letterSpacing: "0.18em",
                     textTransform: "uppercase",
                     color: "var(--ink)",
                     opacity: 0.45,
@@ -813,26 +1090,28 @@ export function DashboardPage() {
               {enquiries.length === 0 ? (
                 <div
                   style={{
-                    padding: "24px 0",
+                    padding: "28px 0",
+                    textAlign: "center",
                     fontFamily: "var(--font-body)",
                     fontSize: 12,
                     color: "var(--ink)",
                     opacity: 0.3,
                     fontStyle: "italic",
-                    textAlign: "center",
+                    lineHeight: 1.6,
                   }}
                 >
-                  No enquiries yet. Submissions from the Plan Trip form will
-                  appear here.
+                  No enquiries yet.
+                  <br />
+                  Plan Trip submissions appear here.
                 </div>
               ) : (
                 enquiries
-                  .slice(0, 5)
+                  .slice(0, 6)
                   .map((enq) => <EnquiryRow key={enq.id} enq={enq} />)
               )}
             </div>
 
-            {enquiries.length > 5 && (
+            {enquiries.length > 6 && (
               <div
                 style={{
                   padding: "12px 20px",
@@ -859,67 +1138,60 @@ export function DashboardPage() {
           {/* Quick actions */}
           <div
             style={{
-              backgroundColor: "white",
-              border: "1px solid rgba(18,17,16,0.08)",
-              padding: "16px 20px",
+              backgroundColor: "var(--indigo)",
+              padding: "20px 20px 16px",
             }}
           >
             <div
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: 9,
-                letterSpacing: "0.16em",
+                letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "var(--ink)",
-                opacity: 0.45,
-                marginBottom: 12,
+                color: "var(--paper)",
+                opacity: 0.4,
+                marginBottom: 14,
               }}
             >
               Quick actions
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
               {[
                 { label: "Add a new tour", href: "/admin/tours/new" },
                 { label: "Add a destination pin", href: "/admin/destinations" },
                 { label: "Upload a gallery photo", href: "/admin/gallery" },
                 { label: "Edit hero headline", href: "/admin/content" },
-                { label: "Update contact details", href: "/admin/contact" },
                 { label: "Reorder featured tours", href: "/admin/featured" },
                 { label: "Run site health check", href: "/admin/health" },
-              ].map((action) => (
+              ].map((a) => (
                 <Link
-                  key={action.href}
-                  to={action.href}
+                  key={a.href}
+                  to={a.href}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "8px 10px",
+                    padding: "10px 12px",
                     fontFamily: "var(--font-body)",
                     fontSize: 12,
-                    color: "var(--ink)",
+                    color: "var(--paper)",
                     textDecoration: "none",
-                    transition: "background-color 0.15s",
+                    opacity: 0.75,
+                    transition: "opacity 0.15s, background-color 0.15s",
                   }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLElement).style.backgroundColor =
-                      "rgba(18,17,16,0.03)")
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLElement).style.backgroundColor =
-                      "transparent")
-                  }
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.opacity = "1";
+                    (e.currentTarget as HTMLElement).style.backgroundColor =
+                      "rgba(241,234,217,0.06)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.opacity = "0.75";
+                    (e.currentTarget as HTMLElement).style.backgroundColor =
+                      "transparent";
+                  }}
                 >
-                  <span>{action.label}</span>
-                  <span
-                    style={{
-                      color: "var(--ochre)",
-                      opacity: 0.6,
-                      fontSize: 14,
-                    }}
-                  >
-                    →
-                  </span>
+                  <span>{a.label}</span>
+                  <span style={{ color: "var(--ochre)", fontSize: 14 }}>→</span>
                 </Link>
               ))}
             </div>
