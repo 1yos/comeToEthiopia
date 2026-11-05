@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { tours as hardcodedTours } from "@/data/tours";
 import type { Tour, TourDay } from "@/data/tours";
@@ -54,6 +54,7 @@ export function TourEditPage() {
     type: "success" | "error";
   } | null>(null);
   const [saving, setSaving] = useState(false);
+  const initialForm = useRef<string>("");
 
   useEffect(() => {
     if (!isNew && id) {
@@ -61,9 +62,54 @@ export function TourEditPage() {
       if (found) {
         const { id: _id, ...rest } = found;
         setForm(rest);
+        initialForm.current = JSON.stringify(rest);
       }
+    } else {
+      initialForm.current = JSON.stringify(EMPTY_TOUR);
     }
   }, [id, isNew]);
+
+  // Track unsaved changes
+  const isDirty = useMemo(
+    () => JSON.stringify(form) !== initialForm.current,
+    [form],
+  );
+
+  // Cmd/Ctrl+S to save
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        if (isDirty && !saving) {
+          const evt = new Event("submit", { bubbles: true, cancelable: true });
+          (
+            document.querySelector("form") as HTMLFormElement | null
+          )?.dispatchEvent(evt);
+        }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isDirty, saving]);
+
+  // Warn on unload with unsaved changes
+  useEffect(() => {
+    const onUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, [isDirty]);
+
+  // Slug auto-generation from name
+  const autoSlug = (name: string) =>
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -577,9 +623,9 @@ export function TourEditPage() {
               {saving ? "Saving…" : isNew ? "Create tour" : "Save changes"}
             </button>
 
-            {!isNew && (
+            {!isNew && form.liveUrl && (
               <a
-                href={`/tours/${form.liveUrl?.split("/").pop() ?? ""}`}
+                href={form.liveUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="admin-btn admin-btn--secondary"
@@ -588,9 +634,64 @@ export function TourEditPage() {
                 Preview on site →
               </a>
             )}
+
+            {/* Slug hint */}
+            {form.name && (
+              <div
+                style={{
+                  padding: "10px 12px",
+                  backgroundColor: "var(--a-bg-subtle)",
+                  borderRadius: "var(--a-radius)",
+                  fontSize: "var(--a-text-xs)",
+                  color: "var(--a-muted)",
+                }}
+              >
+                <span
+                  style={{ fontWeight: 600, color: "var(--a-text-secondary)" }}
+                >
+                  URL slug:
+                </span>{" "}
+                /tours/{autoSlug(form.name)}
+              </div>
+            )}
           </div>
         </div>
       </form>
+
+      {/* Sticky unsaved-changes save bar */}
+      {isDirty && !saving && (
+        <div className="admin-save-bar">
+          <div className="admin-save-bar__hint">
+            <span className="admin-save-bar__dot" />
+            Unsaved changes
+          </div>
+          <div style={{ display: "flex", gap: "var(--a-space-2)" }}>
+            <button
+              type="button"
+              className="admin-btn admin-btn--secondary"
+              onClick={() => {
+                setForm(JSON.parse(initialForm.current));
+                showToast("Changes reverted.", "success");
+              }}
+            >
+              Discard
+            </button>
+            <button
+              type="submit"
+              className="admin-btn admin-btn--primary"
+              onClick={(e) => {
+                e.preventDefault();
+                const formEl = document.querySelector(
+                  "form",
+                ) as HTMLFormElement | null;
+                formEl?.requestSubmit();
+              }}
+            >
+              {isNew ? "Create tour" : "Save changes"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} />}
     </div>

@@ -8,6 +8,56 @@ interface Review {
   rating: number;
   text: string;
   avatar: string;
+  status: "approved" | "hidden" | "featured";
+}
+
+function StarRating({
+  rating,
+  onChange,
+}: {
+  rating: number;
+  onChange?: (n: number) => void;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange?.(n)}
+          style={{
+            border: "none",
+            background: "none",
+            cursor: onChange ? "pointer" : "default",
+            padding: 0,
+            lineHeight: 1,
+          }}
+          aria-label={`${n} star${n > 1 ? "s" : ""}`}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill={n <= rating ? "var(--a-warning)" : "none"}
+            stroke="var(--a-warning)"
+            strokeWidth="1"
+          >
+            <path d="M7 1l1.8 3.6L13 5.4l-3 2.9.7 4.1L7 10.4l-3.7 2 .7-4.1-3-2.9 4.2-.8z" />
+          </svg>
+        </button>
+      ))}
+      <span
+        style={{
+          marginLeft: 4,
+          fontSize: "var(--a-text-xs)",
+          color: "var(--a-muted)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {rating}/5
+      </span>
+    </div>
+  );
 }
 
 const INITIAL_REVIEWS: Review[] = [
@@ -19,6 +69,7 @@ const INITIAL_REVIEWS: Review[] = [
     rating: 5,
     text: "Did the 7-day northern circuit in January for Timkat. Our guide knew every priest by name in Lalibela and got us into the morning service at 5:40am before the tourist groups arrived. The Simien day was cold and worth every layer. Genuinely the best-organised trip I have taken.",
     avatar: "TL",
+    status: "featured",
   },
   {
     id: "2",
@@ -28,6 +79,7 @@ const INITIAL_REVIEWS: Review[] = [
     rating: 5,
     text: "We booked the Danakil 3-day expedition in February. The logistics in that region are complicated — armed escort, convoy timing, the Erta Ale trek at night. Everything ran on time. Woke up 10 metres from a boiling lava lake. Nothing else to say.",
     avatar: "AO",
+    status: "approved",
   },
   {
     id: "3",
@@ -37,6 +89,7 @@ const INITIAL_REVIEWS: Review[] = [
     rating: 5,
     text: "Solo traveller, first time in Ethiopia. The guide adjusted the pace every day without me having to ask — more time at Debre Birhan Selassie, less at the souvenir shops. The coffee ceremony in a local home on day one set the tone for the whole trip. Highly recommend.",
     avatar: "KW",
+    status: "approved",
   },
 ];
 
@@ -131,6 +184,27 @@ export function ReviewsAdminPage() {
                 <div className="admin-card__title" style={{ marginBottom: 0 }}>
                   Review {idx + 1}
                 </div>
+                <div style={{ marginLeft: "auto" }}>
+                  <StarRating
+                    rating={review.rating}
+                    onChange={(n) => update(review.id, "rating", n)}
+                  />
+                </div>
+              </div>
+
+              {/* Status toggle */}
+              <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+                {(["approved", "featured", "hidden"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => update(review.id, "status", s)}
+                    className={`admin-filter-chip${review.status === s ? " admin-filter-chip--active" : ""}`}
+                    style={{ textTransform: "capitalize" }}
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
 
               <div

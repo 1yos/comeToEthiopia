@@ -185,9 +185,11 @@ export function SiteHealthPage() {
   const [activeCategory, setActiveCategory] = useState<
     "all" | "image" | "todo" | "info"
   >("all");
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
   useEffect(() => {
     setItems(buildHealthReport());
+    setLastChecked(new Date());
   }, []);
 
   const runImageCheck = async () => {
@@ -195,6 +197,7 @@ export function SiteHealthPage() {
     const results = await checkImages();
     setImageItems(results);
     setCheckingImages(false);
+    setLastChecked(new Date());
   };
 
   const allItems = [...items, ...imageItems];
@@ -204,6 +207,26 @@ export function SiteHealthPage() {
       : allItems.filter((i) => i.category === activeCategory);
 
   const warningCount = allItems.filter((i) => i.severity === "warning").length;
+  const okCount = allItems.filter((i) => i.severity === "ok").length;
+  const healthScore =
+    allItems.length > 0 ? Math.round((okCount / allItems.length) * 100) : 100;
+
+  // Map file path to admin fix URL
+  const getFixUrl = (file?: string): string | null => {
+    if (!file) return null;
+    if (file.includes("tours.ts")) return "/admin/tours";
+    if (file.includes("destinations.ts")) return "/admin/destinations";
+    if (file.includes(".tsx")) return "/admin/content";
+    return null;
+  };
+
+  const formatTimestamp = (d: Date) =>
+    d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   return (
     <div>
@@ -232,6 +255,11 @@ export function SiteHealthPage() {
           </div>
           <div className="admin-section-header__sub">
             Content gaps, missing assets, and pending verification items.
+            {lastChecked && (
+              <span style={{ marginLeft: 8, color: "var(--a-faint)" }}>
+                · Last checked {formatTimestamp(lastChecked)}
+              </span>
+            )}
           </div>
         </div>
         <div className="admin-section-header__actions">
@@ -240,8 +268,76 @@ export function SiteHealthPage() {
             onClick={runImageCheck}
             disabled={checkingImages}
           >
-            {checkingImages ? "Checking images…" : "Check images"}
+            {checkingImages ? "Checking images…" : "Re-run checks"}
           </button>
+        </div>
+      </div>
+
+      {/* Health score bar */}
+      <div
+        className="admin-card"
+        style={{ marginBottom: 16, padding: "16px 20px" }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 8,
+          }}
+        >
+          <span className="admin-card__title" style={{ marginBottom: 0 }}>
+            Health score
+          </span>
+          <span
+            style={{
+              fontSize: "var(--a-text-lg)",
+              fontWeight: 800,
+              color:
+                healthScore >= 80
+                  ? "var(--a-success)"
+                  : healthScore >= 50
+                    ? "var(--a-warning)"
+                    : "var(--a-danger)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {healthScore}%
+          </span>
+        </div>
+        <div
+          style={{
+            height: 6,
+            backgroundColor: "var(--a-bg-subtle)",
+            borderRadius: "var(--a-radius-full)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              width: `${healthScore}%`,
+              backgroundColor:
+                healthScore >= 80
+                  ? "var(--a-success)"
+                  : healthScore >= 50
+                    ? "var(--a-warning)"
+                    : "var(--a-danger)",
+              borderRadius: "var(--a-radius-full)",
+              transition: "width 0.4s ease",
+            }}
+          />
+        </div>
+        <div
+          style={{
+            fontSize: "var(--a-text-xs)",
+            color: "var(--a-muted)",
+            marginTop: 6,
+          }}
+        >
+          {okCount} passing · {warningCount}{" "}
+          {warningCount === 1 ? "warning" : "warnings"} · {allItems.length}{" "}
+          total checks
         </div>
       </div>
 
@@ -356,6 +452,22 @@ export function SiteHealthPage() {
                 >
                   {item.severity}
                 </span>
+                {getFixUrl(item.file) && item.severity === "warning" && (
+                  <a
+                    href={getFixUrl(item.file)!}
+                    style={{
+                      fontSize: "var(--a-text-xs)",
+                      fontWeight: 600,
+                      color: "var(--a-accent-text)",
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                      marginLeft: 4,
+                      paddingTop: 3,
+                    }}
+                  >
+                    Fix →
+                  </a>
+                )}
               </div>
             ))}
           </div>
