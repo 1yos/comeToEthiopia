@@ -1,7 +1,7 @@
 /**
  * Enquiries store — reads/writes to localStorage.
  * Key: "cte-enquiries"
- * Each enquiry has a status: "new" | "replied" | "archived"
+ * Status workflow: "new" → "in-progress" → "replied" → "closed" | "archived"
  */
 
 export interface Enquiry {
