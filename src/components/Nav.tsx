@@ -17,10 +17,10 @@ interface NavProps {
 }
 
 export function Nav({
-  audience,
+  audience: _audience,
   lang,
-  onAudienceChange,
-  onLangChange,
+  onAudienceChange: _onAudienceChange,
+  onLangChange: _onLangChange,
 }: NavProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -155,76 +155,9 @@ export function Nav({
         ))}
       </ul>
 
-      {/* Right: audience + lang + sound + hamburger */}
+      {/* Right: sound + hamburger */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        {/* Audience toggle */}
-        <div
-          role="group"
-          aria-label="Audience mode"
-          style={{ display: "flex", border: "1px solid rgba(241,234,217,0.2)" }}
-        >
-          {(["visitor", "local"] as AudienceMode[]).map((mode) => (
-            <button
-              key={mode}
-              aria-pressed={audience === mode}
-              onClick={() => onAudienceChange(mode)}
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 9,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                padding: "5px 10px",
-                background: audience === mode ? "var(--ochre)" : "transparent",
-                color: audience === mode ? "var(--ink)" : "var(--paper)",
-                border: "none",
-                cursor: "none",
-                transition: `background-color ${DURATION.micro}s ease`,
-                opacity: audience === mode ? 1 : 0.55,
-              }}
-            >
-              {mode === "visitor" ? t.visiting : t.local}
-            </button>
-          ))}
-        </div>
-
-        {/* Language toggle */}
-        <div
-          role="group"
-          aria-label="Language"
-          style={{
-            display: "flex",
-            border: "1px solid rgba(241,234,217,0.2)",
-            marginLeft: 2,
-          }}
-        >
-          {(["en", "am"] as Lang[]).map((l) => (
-            <button
-              key={l}
-              aria-pressed={lang === l}
-              onClick={() => onLangChange(l)}
-              style={{
-                fontFamily:
-                  l === "am" ? "var(--font-geez)" : "var(--font-body)",
-                fontSize: l === "am" ? 11 : 9,
-                letterSpacing: "0.1em",
-                padding: "5px 10px",
-                background:
-                  lang === l ? "rgba(241,234,217,0.12)" : "transparent",
-                color: "var(--paper)",
-                border: "none",
-                cursor: "none",
-                transition: `background-color ${DURATION.micro}s ease`,
-                opacity: lang === l ? 1 : 0.45,
-              }}
-            >
-              {l === "en" ? "EN" : "አማ"}
-              {/* TODO-REVIEW */}
-            </button>
-          ))}
-        </div>
-
         <AudioToggle />
-
         {/* Mobile hamburger */}
         <button
           aria-label={menuOpen ? t.close : "Open menu"}
@@ -310,56 +243,6 @@ export function Nav({
             {link.label}
           </motion.a>
         ))}
-
-        {/* Audience + lang in mobile drawer */}
-        <div
-          style={{ marginTop: 24, display: "flex", gap: 8, flexWrap: "wrap" }}
-        >
-          {(["visitor", "local"] as AudienceMode[]).map((mode) => (
-            <button
-              key={mode}
-              aria-pressed={audience === mode}
-              onClick={() => {
-                onAudienceChange(mode);
-                setMenuOpen(false);
-              }}
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 9,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                padding: "6px 14px",
-                background: audience === mode ? "var(--ochre)" : "transparent",
-                color: audience === mode ? "var(--ink)" : "var(--paper)",
-                border: "1px solid rgba(241,234,217,0.2)",
-                cursor: "none",
-              }}
-            >
-              {mode === "visitor" ? t.visiting : t.local}
-            </button>
-          ))}
-          {(["en", "am"] as Lang[]).map((l) => (
-            <button
-              key={l}
-              aria-pressed={lang === l}
-              onClick={() => onLangChange(l)}
-              style={{
-                fontFamily:
-                  l === "am" ? "var(--font-geez)" : "var(--font-body)",
-                fontSize: l === "am" ? 13 : 9,
-                padding: "6px 14px",
-                background:
-                  lang === l ? "rgba(241,234,217,0.12)" : "transparent",
-                color: "var(--paper)",
-                border: "1px solid rgba(241,234,217,0.2)",
-                cursor: "none",
-              }}
-            >
-              {l === "en" ? "EN" : "አማ"}
-              {/* TODO-REVIEW */}
-            </button>
-          ))}
-        </div>
       </motion.div>
     </motion.nav>
   );
