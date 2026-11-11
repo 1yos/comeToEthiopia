@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { AudioToggle } from "./AudioToggle";
 import { siteContent } from "@/data/content";
 import { useI18n } from "@/hooks/useI18n";
 import { useLocation } from "react-router-dom";
@@ -155,9 +154,8 @@ export function Nav({
         ))}
       </ul>
 
-      {/* Right: sound + hamburger */}
+      {/* Right: hamburger */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <AudioToggle />
         {/* Mobile hamburger */}
         <button
           aria-label={menuOpen ? t.close : "Open menu"}
