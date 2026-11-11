@@ -9,10 +9,12 @@ export interface Enquiry {
   timestamp: string;
   name: string;
   email: string;
+  phone?: string;
   selectedTourIds: string[];
   selectedTourNames: string[];
   tourFreeText: string;
   dates: string;
+  tripLength?: string;
   groupSize: string | null;
   notes: string;
   status: "new" | "in-progress" | "replied" | "closed" | "archived";
@@ -86,8 +88,10 @@ export function exportEnquiriesCSV(filtered?: Enquiry[]): void {
     "Date",
     "Name",
     "Email",
+    "Phone",
     "Tours",
     "Dates",
+    "Trip Length",
     "Group",
     "Notes",
     "Status",
@@ -97,8 +101,10 @@ export function exportEnquiriesCSV(filtered?: Enquiry[]): void {
     new Date(e.timestamp).toLocaleDateString("en-GB"),
     e.name,
     e.email,
+    e.phone || "—",
     e.selectedTourNames.join(" | ") || e.tourFreeText || "—",
     e.dates || "—",
+    e.tripLength || "—",
     e.groupSize || "—",
     e.notes.replace(/,/g, ";") || "—",
     e.status,
